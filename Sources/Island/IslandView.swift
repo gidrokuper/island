@@ -104,10 +104,10 @@ struct IslandView: View {
     func content(_ mode: IslandModel.Mode) -> some View {
         switch mode {
         case .idle:
-            /* в покое — искра Claude справа от выреза, вместо значка в строке меню */
+            /* в покое — искра Claude слева от выреза, на месте обложки */
             HStack {
-                Spacer()
                 Spark(state: .idle).frame(width: 16, height: 16)
+                Spacer()
             }
             .padding(.horizontal, 10)
             .frame(height: m.notch.height)
@@ -184,13 +184,17 @@ struct WorkingWing: View {
         let a = m.activities.last
         VStack(spacing: 0) {
             /* если играет музыка — плеер остаётся по бокам чёлки */
-            /* справа от выреза — искра Claude (вращается, пока он работает), слева — обложка, если играет музыка */
+            /* музыка: обложка слева, искра справа; без музыки искра слева. Пока Claude работает — искра вращается */
             HStack {
                 if m.musicOn {
                     Artwork(image: m.art, size: 20, radius: 5)
+                    Spacer()
+                    Spark(state: .working).frame(width: 16, height: 16)
+                } else {
+                    /* музыки нет — искра слева, на месте обложки */
+                    Spark(state: .working).frame(width: 16, height: 16)
+                    Spacer()
                 }
-                Spacer()
-                Spark(state: .working).frame(width: 16, height: 16)
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
