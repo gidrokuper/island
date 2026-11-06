@@ -69,11 +69,13 @@ struct IslandView: View {
         var s = m.bodySize(mode)
         if m.hover && !big { s.width += 14; s.height += 3 }
         let tr: CGFloat = big ? 14 : 7
-        let br: CGFloat = big ? 34 : (mode == .volume ? 18 : 11)
+        let br: CGFloat = big ? 34 : (mode == .volume || mode == .working ? 18 : 11)
+        /* полупрозрачный фон; крупные панели чуть плотнее, чтобы текст читался */
+        let fill = Color.black.opacity(big ? 0.86 : 0.78)
 
         return ZStack(alignment: .top) {
             NotchShape(top: tr, bottom: br)
-                .fill(Color.black)
+                .fill(fill)
                 .frame(width: s.width + tr * 2, height: s.height)
                 .shadow(color: .black.opacity(big ? 0.55 : 0), radius: big ? 24 : 0, y: big ? 12 : 0)
 
@@ -85,6 +87,7 @@ struct IslandView: View {
         .animation(m.opening ? Motion.open : Motion.close, value: mode)
         .animation(Motion.hover, value: m.hover)
         .animation(Motion.open, value: m.activities.count)
+        .animation(Motion.hover, value: m.activities.last?.action)
         .animation(Motion.close, value: m.notch)
         .environment(\.colorScheme, .dark)
         .foregroundStyle(.white)
@@ -195,7 +198,7 @@ struct WorkingWing: View {
                     .fixedSize()
                 }
             }
-            .frame(height: 28)
+            .frame(height: 26)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
             .clipped()
