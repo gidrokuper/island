@@ -7,6 +7,15 @@
 
 <p align="center"><a href="#english">English below</a></p>
 
+<p align="center">
+  <img src="docs/claude.png" width="520" alt="Claude Code работает: проект, действие, таймер; по бокам выреза — обложка и эквалайзер"><br>
+  <sub>Claude Code правит файл, рядом играет музыка</sub>
+</p>
+<p align="center">
+  <img src="docs/notice.png" width="560" alt="Уведомление в острове"><br>
+  <sub>Уведомление — из любого приложения или своего скрипта</sub>
+</p>
+
 ---
 
 ## Что умеет
