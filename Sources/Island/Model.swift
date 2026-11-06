@@ -250,6 +250,8 @@ final class IslandModel: ObservableObject {
                         body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle))
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
+        case "SoundMenu":
+            openSoundMenu()
         case "Demo":
             showDevice(sound.demoDevice(inCase: i["message"] == "case"))
         case "Notify":
@@ -377,6 +379,14 @@ final class IslandModel: ObservableObject {
         let w = DispatchWorkItem { [weak self] in self?.volumeHUD = false }
         volumeWork = w
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.6, execute: w)
+    }
+
+    /* меню «Звук» с режимами наушников; плашку подключения при этом убираем */
+    func openSoundMenu() {
+        deviceWork?.cancel()
+        connected = nil
+        expanded = false
+        DispatchQueue.main.async { SoundMenu.open() }
     }
 
     func showDevice(_ d: OutputDevice) {

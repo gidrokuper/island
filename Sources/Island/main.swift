@@ -66,7 +66,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func expandedRect() -> NSRect { rect(.expanded, pad: 10) }
 
-    var interactive: Bool { model.mode == .expanded || model.mode == .notice }
+    var interactive: Bool {
+        model.mode == .expanded || model.mode == .notice || (model.mode == .device && model.connected?.airpods == true)
+    }
 
     func modeChanged() {
         if interactive {
@@ -90,6 +92,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.ignoresMouseEvents = !inside
             model.noticeHover = inside
             if model.hover { model.hover = false }
+        case .device where model.connected?.airpods == true:
+            panel.ignoresMouseEvents = !rect(.device, pad: 4).contains(p)
         case .expanded:
             panel.ignoresMouseEvents = false
             if expandedRect().contains(p) { cancel() } else { schedule(false, after: 0.16) }

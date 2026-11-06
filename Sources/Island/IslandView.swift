@@ -136,6 +136,8 @@ struct IslandView: View {
             if let d = m.connected {
                 if d.airpods {
                     AirPodsWing(d: d, notch: m.notch)
+                        .contentShape(Rectangle())
+                        .onTapGesture { m.openSoundMenu() }
                         .id("\(d.id)-\(d.inCase)")
                         .transition(.island)
                 } else {
@@ -330,7 +332,7 @@ struct Expanded: View {
                 Text(Self.dateFmt.string(from: Date()).capitalized)
                     .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
-                OutputIcons(s: m.sound)
+                OutputIcons(s: m.sound) { m.openSoundMenu() }
                 BatteryLabel(b: m.battery)
                     .padding(.leading, 6)
             }
@@ -651,54 +653,29 @@ struct Charge: View {
     }
 }
 
-/* Живая картинка: наушники покачиваются в воздухе, кейс поворачивается, наушники выглядывают из него. */
+/* Объёмные наушники или кейс (смотря где наушники): плавно поворачиваются, с тенью и светотенью. */
 struct AirPodsArt: View {
     let d: OutputDevice
     @State private var shown = false
 
+    var symbol: String {
+        if d.symbol == "airpods.max" { return "airpods.max" }
+        return d.inCase ? caseSymbol(d) : d.symbol
+    }
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
-            Group {
-                if d.symbol == "airpods.max" {
-                    Image(systemName: "airpods.max")
-                        .font(.system(size: 36, weight: .regular))
-                        .rotation3DEffect(.degrees(sin(t * 1.3) * 22), axis: (0, 1, 0), perspective: 0.5)
-                        .offset(y: sin(t * 2) * 2)
-                        .scaleEffect(shown ? 1 : 0.3)
-                } else if d.inCase {
-                    ZStack {
-                        Circle().fill(Color.green).frame(width: 7, height: 7).blur(radius: 3)
-                            .opacity(0.45 + 0.4 * sin(t * 3)).offset(y: 20)
-                        HStack(spacing: 1) {
-                            Image(systemName: budSymbol(d, left: true))
-                            Image(systemName: budSymbol(d, left: false))
-                        }
-                        .font(.system(size: 14))
-                        .offset(y: shown ? -13 + sin(t * 2.2) * 1.5 : 4)
-                        .opacity(shown ? 1 : 0)
-                        Image(systemName: caseSymbol(d))
-                            .font(.system(size: 32))
-                            .rotation3DEffect(.degrees(sin(t * 1.1) * 16), axis: (0, 1, 0), perspective: 0.5)
-                            .offset(y: 6)
-                            .scaleEffect(shown ? 1 : 0.3)
-                    }
-                } else {
-                    HStack(spacing: 2) {
-                        Image(systemName: budSymbol(d, left: true))
-                            .rotationEffect(.degrees(-6 + sin(t * 1.6) * 6))
-                            .offset(x: shown ? 0 : 16, y: sin(t * 2) * 3)
-                        Image(systemName: budSymbol(d, left: false))
-                            .rotationEffect(.degrees(6 - sin(t * 1.6 + 0.7) * 6))
-                            .offset(x: shown ? 0 : -16, y: sin(t * 2 + 1.3) * 3)
-                    }
-                    .font(.system(size: 30))
-                    .opacity(shown ? 1 : 0)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Image(systemName: symbol)
+                .font(.system(size: 34, weight: .regular))
+                .foregroundStyle(LinearGradient(colors: [.white, Color(white: 0.62)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .shadow(color: .white.opacity(0.18), radius: 6)
+                .rotation3DEffect(.degrees(sin(t * 0.9) * 28), axis: (0, 1, 0), perspective: 0.45)
+                .scaleEffect(shown ? 1 : 0.5)
+                .opacity(shown ? 1 : 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .onAppear { withAnimation(.spring(response: 0.6, dampingFraction: 0.55).delay(0.1)) { shown = true } }
+        .onAppear { withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.1)) { shown = true } }
     }
 }
 
@@ -768,11 +745,14 @@ struct VolumeSlider: View {
 /* Выходы звука — маленькие иконки в верхней строке рядом с батареей. Клик переключает выход. */
 struct OutputIcons: View {
     @ObservedObject var s: SoundSystem
+    var onMenu: () -> Void = { SoundMenu.open() }
     var body: some View {
         HStack(spacing: 4) {
             ForEach(s.outputs) { d in
                 OutputIcon(d: d, active: d.id == s.current) {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { s.select(d.id) }
+                    /* уже выбранные наушники — открыть меню с их режимами */
+                    if d.id == s.current && d.bluetooth { onMenu() }
+                    else { withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { s.select(d.id) } }
                 }
             }
         }
