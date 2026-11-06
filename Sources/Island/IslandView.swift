@@ -225,7 +225,7 @@ struct WorkingWing: View {
 
 struct Spinner: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
+        Live { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             Circle()
                 .trim(from: 0, to: 0.68)
@@ -556,7 +556,7 @@ struct Artwork: View {
 struct Bars: View {
     let playing: Bool
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !playing)) { ctx in
+        Live(paused: !playing) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             HStack(alignment: .center, spacing: 2) {
                 ForEach(0..<4, id: \.self) { i in
@@ -672,7 +672,7 @@ struct AirPodsArt: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
+        Live { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             Image(systemName: symbol)
                 .font(.system(size: 34, weight: .regular))

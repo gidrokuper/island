@@ -14,7 +14,7 @@ struct Spark: View {
     private static let rays: [CGFloat] = [1.0, 0.72, 0.9, 0.66, 0.96, 0.7, 0.86, 0.62, 0.94, 0.68]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 60, paused: state == .idle)) { ctx in
+        Live(paused: state == .idle) { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             Canvas { g, size in
                 let c = CGPoint(x: size.width / 2, y: size.height / 2)
