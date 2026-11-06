@@ -617,7 +617,7 @@ struct AirPodsWing: View {
                 AirPodsArt(d: d).frame(height: 40)
             } else {
                 /* настоящая 3D-модель со светом и бликами */
-                AirPods3D(pro: d.symbol == "airpods.pro")
+                AirPods3D(pro: d.symbol == "airpods.pro", inCase: d.inCase)
                     .frame(width: 84, height: 50)
                     .scaleEffect(shown ? 1 : 0.4)
                     .opacity(shown ? 1 : 0)

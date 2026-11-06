@@ -3,14 +3,16 @@ import SwiftUI
 
 /*
  Объёмные наушники: настоящая 3D-сцена (SceneKit) со светом и бликами, на прозрачном фоне.
- Модель собрана из простых фигур: корпус, амбушюра (у Pro), ножка, сетка микрофона.
+ Наушники: корпус, амбушюра (у Pro), ножка, сетка микрофона.
+ Кейс (когда наушники в нём): крышка и основание со швом, индикатор заряда.
 */
 struct AirPods3D: NSViewRepresentable {
     var pro = true
+    var inCase = false
 
     func makeNSView(context: Context) -> SCNView {
         let v = PassThroughSCNView(frame: .zero)
-        v.scene = Self.makeScene(pro: pro)
+        v.scene = Self.makeScene(pro: pro, inCase: inCase)
         v.backgroundColor = .clear
         v.wantsLayer = true
         v.layer?.isOpaque = false
@@ -23,11 +25,16 @@ struct AirPods3D: NSViewRepresentable {
 
     func updateNSView(_ v: SCNView, context: Context) {}
 
-    static func makeScene(pro: Bool) -> SCNScene {
+    static func makeScene(pro: Bool, inCase: Bool) -> SCNScene {
         let scene = SCNScene()
         scene.background.contents = NSColor.clear
 
         let pair = SCNNode()
+        if inCase {
+            let c = chargingCase(pro: pro)
+            c.eulerAngles = SCNVector3(0.12, 0, 0)
+            pair.addChildNode(c)
+        } else {
         let left = bud(pro: pro)
         left.position = SCNVector3(-1.05, 0, 0)
         left.eulerAngles = SCNVector3(0, CGFloat.pi * 0.12, -0.12)
@@ -37,6 +44,7 @@ struct AirPods3D: NSViewRepresentable {
         right.eulerAngles = SCNVector3(0, -CGFloat.pi * 0.12, 0.12)
         pair.addChildNode(left)
         pair.addChildNode(right)
+        }
         pair.position = SCNVector3(0, 0.35, 0)
         pair.runAction(.repeatForever(.rotateBy(x: 0, y: .pi * 2, z: 0, duration: 4.5)))
         scene.rootNode.addChildNode(pair)
@@ -116,6 +124,42 @@ struct AirPods3D: NSViewRepresentable {
         mic.geometry?.firstMaterial = gloss(NSColor(white: 0.55, alpha: 1), shininess: 0.4)
         mic.position = SCNVector3(-0.08, 0.55 - stemLen - 0.13, -0.02)
         node.addChildNode(mic)
+        return node
+    }
+}
+
+extension AirPods3D {
+    /* кейс: основание и крышка с тонким тёмным швом между ними, зелёный индикатор спереди */
+    static func chargingCase(pro: Bool) -> SCNNode {
+        let node = SCNNode()
+        let white = gloss(NSColor(white: 0.96, alpha: 1))
+        let w: CGFloat = pro ? 2.4 : 2.0, h: CGFloat = pro ? 1.8 : 2.1, d: CGFloat = 0.95
+        let r: CGFloat = 0.42
+        let lidH = h * 0.32
+
+        /* цельный скруглённый корпус и тонкая тёмная линия шва там, где крышка */
+        let body = SCNNode(geometry: SCNBox(width: w, height: h, length: d, chamferRadius: r))
+        body.geometry?.firstMaterial = white
+        node.addChildNode(body)
+
+        /* шов — контур со скруглёнными углами точно по форме корпуса в плане */
+        let outline = NSBezierPath(roundedRect: NSRect(x: -(w + 0.006) / 2, y: -(d + 0.006) / 2, width: w + 0.006, height: d + 0.006),
+                                   xRadius: r + 0.003, yRadius: r + 0.003)
+        let seam = SCNNode(geometry: SCNShape(path: outline, extrusionDepth: 0.026))
+        seam.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+        seam.geometry?.firstMaterial = gloss(NSColor(white: 0.55, alpha: 1), shininess: 0.3)
+        seam.position = SCNVector3(0, h / 2 - lidH, 0)
+        node.addChildNode(seam)
+
+        let led = SCNNode(geometry: SCNSphere(radius: 0.05))
+        let m = SCNMaterial()
+        m.diffuse.contents = NSColor.systemGreen
+        m.emission.contents = NSColor.systemGreen
+        led.geometry?.firstMaterial = m
+        led.scale = SCNVector3(1, 1, 0.4)
+        led.position = SCNVector3(0, -0.05, d / 2 + 0.002)
+        node.addChildNode(led)
+        node.scale = SCNVector3(0.92, 0.92, 0.92)
         return node
     }
 }
