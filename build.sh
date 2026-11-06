@@ -1,8 +1,8 @@
 #!/bin/bash
 # Сборка Island.app:
-#   bash mac-island/build.sh            — собрать в mac-island/build/
-#   bash mac-island/build.sh --run      — собрать и запустить отсюда
-#   bash mac-island/build.sh --install  — поставить в ~/Applications и запустить
+#   bash build.sh            — собрать в build/
+#   bash build.sh --run      — собрать и запустить отсюда
+#   bash build.sh --install  — поставить в ~/Applications и запустить
 set -e
 cd "$(dirname "$0")"
 swift build -c release
