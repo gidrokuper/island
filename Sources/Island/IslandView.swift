@@ -119,7 +119,7 @@ struct IslandView: View {
                 Spacer()
                 /* искра Claude или эквалайзер — в настройках плеера */
                 if Prefs.rightIcon == "bars" { Bars(playing: true).frame(width: 18, height: 12) }
-                else { Spark(state: .idle).frame(width: 16, height: 16) }
+                else { Spark(state: .music).frame(width: 16, height: 16) }
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)

@@ -4,10 +4,11 @@ let sparkColor = Color(red: 0.86, green: 0.47, blue: 0.34)
 
 /*
  Логотип острова — «искра»: лучи разной длины из центра.
- working — лучи дышат и искра медленно вращается; attention — пульсирует; done — вспышка.
+ working — лучи дышат и искра медленно вращается; music — лучи мягко пульсируют в такт, без вращения;
+ attention — пульсирует; done — вспышка.
 */
 struct Spark: View {
-    enum State { case idle, working, attention, done }
+    enum State { case idle, working, music, attention, done }
     var state: State = .working
     var color: Color = sparkColor
 
@@ -26,6 +27,8 @@ struct Spark: View {
                     var len = Self.rays[i]
                     if state == .working {
                         len *= 0.72 + 0.28 * CGFloat((sin(t * 4.2 + Double(i) * 1.7) + 1) / 2)
+                    } else if state == .music {
+                        len *= 0.66 + 0.34 * CGFloat((sin(t * 6.0 + Double(i) * 2.3) + 1) / 2)
                     }
                     len *= pulse
                     let a = Double(i) / Double(n) * 2 * .pi + spin

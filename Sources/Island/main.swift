@@ -18,7 +18,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var pending: DispatchWorkItem?
     var poll: Timer?
 
+    /* остров всегда на экране: не даём macOS усыплять его (App Nap), иначе анимации замирают */
+    var awake: NSObjectProtocol?
+
     func applicationDidFinishLaunching(_ note: Notification) {
+        awake = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiatedAllowingIdleSystemSleep, .latencyCritical],
+            reason: "Остров постоянно на экране и анимирует искру, музыку и уведомления")
         /* второй экземпляр не нужен */
         let me = Bundle.main.bundleIdentifier ?? ""
         if NSRunningApplication.runningApplications(withBundleIdentifier: me).count > 1 { NSApp.terminate(nil) }
