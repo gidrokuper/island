@@ -154,7 +154,7 @@ final class IslandModel: ObservableObject {
             /* играет музыка — остров держит размер плеера, текст обрезается */
             if musicOn { return CGSize(width: n.width + 2 * 46, height: n.height + 24) }
             var cw: CGFloat = 12 + 6 + w(a?.action ?? L("Думаю…", "Thinking…"), .medium) + 6 + 32 + 24
-            if let p = a?.project, !p.isEmpty { cw += w(p, .bold) + 6 }
+            cw += 12 + 6  /* значок Claude вместо названия проекта */
             if activities.count > 1 { cw += 22 }
             return CGSize(width: min(max(cw, n.width + 40), n.width + 150), height: n.height + 24)
         case .flash: return CGSize(width: n.width + 2 * 64, height: n.height)

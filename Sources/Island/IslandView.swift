@@ -199,10 +199,8 @@ struct WorkingWing: View {
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
             HStack(spacing: 6) {
-                if let a, !a.project.isEmpty {
-                    Text(a.project).font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                        .fixedSize()
-                }
+                /* вместо названия проекта — значок Claude */
+                Spark(state: .working).frame(width: 12, height: 12)
                 Text(a?.action ?? L("Думаю…", "Thinking…"))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
