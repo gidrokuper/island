@@ -159,7 +159,7 @@ final class IslandModel: ObservableObject {
             return CGSize(width: min(max(cw, n.width + 40), n.width + 150), height: n.height + 24)
         case .flash: return CGSize(width: n.width + 2 * 64, height: n.height)
         case .device:
-            if connected?.airpods == true { return CGSize(width: max(n.width + 2 * 110, 400), height: n.height + 66) }
+            if connected?.airpods == true { return CGSize(width: n.width + 2 * 18, height: n.height + 44) }  /* только наушники под вырезом */
             return CGSize(width: n.width + 2 * 70, height: n.height)
         case .focus: return CGSize(width: n.width + 2 * 92, height: n.height)
         case .volume: return CGSize(width: max(n.width + 70, 290), height: n.height + 30)

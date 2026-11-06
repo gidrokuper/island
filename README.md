@@ -12,9 +12,8 @@ A Dynamic Island for the Mac notch.</p>
   <sub>Claude Code работает, рядом играет музыка · Claude Code at work while music plays</sub>
 </p>
 <p align="center">
-  <img src="docs/airpods.png" width="520" alt="AirPods connected">
-  <img src="docs/case.png" width="520" alt="AirPods in the case"><br>
-  <sub>AirPods: в ушах и в кейсе · in ears and in the case</sub>
+  <img src="docs/airpods.png" width="200" alt="AirPods connected"><br>
+  <sub>AirPods подключились · AirPods connected</sub>
 </p>
 <p align="center">
   <img src="docs/notice.png" width="560" alt="Notification"><br>
@@ -30,7 +29,7 @@ A Dynamic Island for the Mac notch.</p>
 | **Claude Code** | Пока Claude работает — строка под вырезом: проект, что делается сейчас («Правлю Model.swift», «Ищу в сети…»), таймер; справа от выреза крутится искра Claude. Несколько сессий — счётчик ×N. По окончании — уведомление с итогом. |
 | **Искра Claude** | Живёт справа от выреза и в покое — значок Claude из строки меню можно убрать. |
 | **Музыка** | «Музыка» и Spotify: обложка слева от выреза. При наведении — плеер: перемешать, назад, пауза, вперёд, повтор, прогресс. Пока играет музыка, остров не растягивается от длинного текста. |
-| **AirPods** | При подключении — объёмные наушники или кейс (если наушники в кейсе), заряд левого, правого и кейса. Нажатие открывает системное меню «Звук»: выход, прозрачность, шумоподавление, распознавание разговора. |
+| **AirPods** | При подключении под камерой крутятся объёмные наушники — без чёрной плашки, на прозрачном фоне. Нажатие открывает системное меню «Звук»: выход, прозрачность, шумоподавление, распознавание разговора. |
 | **Уведомления** | Уведомления любых приложений; у Telegram — с аватаркой отправителя. Клик открывает приложение. |
 | **Громкость, устройства, зарядка, фокус** | Своя плашка громкости, подключение наушников и колонок, начало зарядки, режимы фокуса. |
 | **Наведение** | Раскрывается: дата, батарея, плеер, громкость и выход звука, сессии Claude по центру. |
@@ -84,7 +83,7 @@ bash install-hooks.sh
 ```bash
 I=~/Applications/Island.app/Contents/MacOS/Island
 $I notify "Сборка" "Готово за 42 с"   # своё уведомление
-$I demo airpods                       # показать подключение AirPods (или: demo case)
+$I demo airpods                       # показать подключение AirPods
 $I soundmenu                          # открыть меню «Звук»
 ```
 
@@ -129,7 +128,7 @@ Swift + SwiftUI, без сторонних зависимостей, Swift Packa
 | **Claude Code** | While Claude works: project, current action (“Editing Model.swift”, “Web search…”) and a timer under the notch, with the Claude spark spinning on the right. Several sessions show ×N. A summary notification when it's done. |
 | **Claude spark** | Sits right of the notch even when idle, so you can hide Claude's menu bar icon. |
 | **Music** | Music and Spotify: artwork left of the notch. Hover for a player with shuffle, previous, play/pause, next, repeat and progress. Long text never stretches the island while music plays. |
-| **AirPods** | On connect: 3D earbuds or the case (when they're in it), with left, right and case battery. Click to open the system Sound menu — output, Transparency, Noise Cancellation, Conversation Awareness. |
+| **AirPods** | On connect, 3D earbuds spin right under the camera on a transparent background — no black pill. Click to open the system Sound menu — output, Transparency, Noise Cancellation, Conversation Awareness. |
 | **Notifications** | From any app; Telegram shows the sender's avatar. Click to open the app. |
 | **Volume, devices, charging, Focus** | Custom volume HUD, headphone and speaker connections, charging, Focus modes. |
 | **Hover** | Expands: date, battery, player, volume and output, Claude sessions centered. |

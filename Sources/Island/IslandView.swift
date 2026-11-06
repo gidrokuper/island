@@ -68,6 +68,9 @@ struct IslandView: View {
         let big = mode == .expanded || mode == .notice
         var s = m.bodySize(mode)
         if m.hover && !big { s.width += 14; s.height += 3 }
+        /* AirPods: вырез не раскрываем, наушники висят под ним на прозрачном фоне */
+        let floating = mode == .device && m.connected?.airpods == true
+        let shape = floating ? m.notch : s
         let tr: CGFloat = big ? 14 : 7
         let br: CGFloat = big ? 34 : (mode == .volume || mode == .working ? 18 : 11)
         /* полупрозрачный фон; крупные панели чуть плотнее, чтобы текст читался */
@@ -76,12 +79,16 @@ struct IslandView: View {
         return ZStack(alignment: .top) {
             NotchShape(top: tr, bottom: br)
                 .fill(fill)
-                .frame(width: s.width + tr * 2, height: s.height)
+                .frame(width: shape.width + tr * 2, height: shape.height)
                 .shadow(color: .black.opacity(big ? 0.55 : 0), radius: big ? 24 : 0, y: big ? 12 : 0)
 
-            content(mode)
-                .frame(width: s.width, height: s.height, alignment: .top)
-                .clipShape(NotchShape(top: 0, bottom: br))
+            if floating {
+                content(mode).frame(width: s.width, height: s.height, alignment: .top)
+            } else {
+                content(mode)
+                    .frame(width: s.width, height: s.height, alignment: .top)
+                    .clipShape(NotchShape(top: 0, bottom: br))
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(m.opening ? Motion.open : Motion.close, value: mode)
@@ -597,36 +604,16 @@ struct DeviceWing: View {
     }
 }
 
-/* AirPods подключились: живая картинка (наушники или кейс — смотря где они), имя и заряд. */
+/* AirPods подключились: под вырезом крутятся объёмные наушники. Нажатие — меню «Звук». */
 struct AirPodsWing: View {
     let d: OutputDevice
     let notch: CGSize
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Circle().fill(.green).frame(width: 6, height: 6)
-                Text(L("Подключены", "Connected")).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .frame(height: notch.height)
-            HStack(spacing: 14) {
-                AirPodsArt(d: d).frame(width: 64, height: 56)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(d.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                    Text(d.inCase ? L("В кейсе", "In case") : L("В ушах", "In ears")).font(.system(size: 11)).foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 4)
-                HStack(spacing: 12) {
-                    if let l = d.left { Charge(level: l, symbol: budSymbol(d, left: true)) }
-                    if let r = d.right { Charge(level: r, symbol: budSymbol(d, left: false)) }
-                    if let c = d.caseLevel { Charge(level: c, symbol: caseSymbol(d)) }
-                    if d.left == nil && d.right == nil, let b = d.battery { Charge(level: b, symbol: d.symbol) }
-                }
-            }
-            .padding(.horizontal, 20)
-            .frame(maxHeight: .infinity)
+            Color.clear.frame(height: notch.height)
+            AirPodsArt(d: d).frame(height: 40)
+            Spacer(minLength: 0)
         }
     }
 }
@@ -666,19 +653,17 @@ struct AirPodsArt: View {
     let d: OutputDevice
     @State private var shown = false
 
-    var symbol: String {
-        if d.symbol == "airpods.max" { return "airpods.max" }
-        return d.inCase ? caseSymbol(d) : d.symbol
-    }
+    /* только наушники, без кейса */
+    var symbol: String { d.symbol }
 
     var body: some View {
         Live { ctx in
             let t = ctx.date.timeIntervalSinceReferenceDate
             Image(systemName: symbol)
-                .font(.system(size: 34, weight: .regular))
+                .font(.system(size: 28, weight: .regular))
                 .foregroundStyle(LinearGradient(colors: [.white, Color(white: 0.62)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .shadow(color: .white.opacity(0.18), radius: 6)
-                .rotation3DEffect(.degrees(sin(t * 0.9) * 28), axis: (0, 1, 0), perspective: 0.45)
+                .shadow(color: .black.opacity(0.55), radius: 4, y: 1)  /* читается и на светлых окнах */
+                .rotation3DEffect(.degrees(t * 90), axis: (0, 1, 0), perspective: 0.45)
                 .scaleEffect(shown ? 1 : 0.5)
                 .opacity(shown ? 1 : 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
