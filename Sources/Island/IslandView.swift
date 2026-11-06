@@ -608,11 +608,21 @@ struct DeviceWing: View {
 struct AirPodsWing: View {
     let d: OutputDevice
     let notch: CGSize
+    @State private var shown = false
 
     var body: some View {
         VStack(spacing: 0) {
             Color.clear.frame(height: notch.height)
-            AirPodsArt(d: d).frame(height: 40)
+            if d.symbol == "airpods.max" {
+                AirPodsArt(d: d).frame(height: 40)
+            } else {
+                /* настоящая 3D-модель со светом и бликами */
+                AirPods3D(pro: d.symbol == "airpods.pro")
+                    .frame(width: 84, height: 50)
+                    .scaleEffect(shown ? 1 : 0.4)
+                    .opacity(shown ? 1 : 0)
+                    .onAppear { withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.08)) { shown = true } }
+            }
             Spacer(minLength: 0)
         }
     }
