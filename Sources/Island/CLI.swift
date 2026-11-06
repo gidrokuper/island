@@ -20,7 +20,7 @@ enum CLI {
             info = ["event": "Demo", "message": args.count > 1 ? args[1] : "airpods"]
         case "notify":
             info = ["event": "Notify",
-                    "title": args.count > 1 ? args[1] : "Остров",
+                    "title": args.count > 1 ? args[1] : "Island",
                     "message": args.count > 2 ? args[2] : "",
                     "bundle": ProcessInfo.processInfo.environment["__CFBundleIdentifier"] ?? ""]
         default:
@@ -64,23 +64,23 @@ enum CLI {
         switch tool {
         case "Bash":
             if let d = input["description"] as? String, !d.isEmpty { return short(d) }
-            return "Запускаю " + short(input["command"] as? String ?? "", 36)
-        case "Edit", "MultiEdit": return "Правлю " + file()
-        case "Write": return "Пишу " + file()
-        case "Read": return "Читаю " + file()
-        case "NotebookEdit": return "Правлю " + file("notebook_path")
-        case "Grep": return "Ищу «" + short(input["pattern"] as? String ?? "", 28) + "»"
-        case "Glob": return "Ищу файлы " + short(input["pattern"] as? String ?? "", 28)
-        case "WebSearch": return "Ищу в сети: " + short(input["query"] as? String ?? "", 30)
-        case "WebFetch": return "Читаю страницу " + (URL(string: input["url"] as? String ?? "")?.host ?? "")
-        case "Task", "Agent": return "Помощник: " + short(input["description"] as? String ?? "работает", 34)
-        case "TodoWrite": return "Обновляю план"
-        case "AskUserQuestion": return "Задаю вопрос"
-        case "Skill": return "Навык " + (input["skill"] as? String ?? "")
+            return L("Запускаю ", "Running ") + short(input["command"] as? String ?? "", 36)
+        case "Edit", "MultiEdit": return L("Правлю ", "Editing ") + file()
+        case "Write": return L("Пишу ", "Writing ") + file()
+        case "Read": return L("Читаю ", "Reading ") + file()
+        case "NotebookEdit": return L("Правлю ", "Editing ") + file("notebook_path")
+        case "Grep": return L("Ищу «", "Searching “") + short(input["pattern"] as? String ?? "", 28) + L("»", "”")
+        case "Glob": return L("Ищу файлы ", "Finding files ") + short(input["pattern"] as? String ?? "", 28)
+        case "WebSearch": return L("Ищу в сети: ", "Web search: ") + short(input["query"] as? String ?? "", 30)
+        case "WebFetch": return L("Читаю страницу ", "Reading ") + (URL(string: input["url"] as? String ?? "")?.host ?? "")
+        case "Task", "Agent": return L("Помощник: ", "Agent: ") + short(input["description"] as? String ?? L("работает", "working"), 34)
+        case "TodoWrite": return L("Обновляю план", "Updating plan")
+        case "AskUserQuestion": return L("Задаю вопрос", "Asking a question")
+        case "Skill": return L("Навык ", "Skill ") + (input["skill"] as? String ?? "")
         default:
             if tool.hasPrefix("mcp__") {
                 let parts = tool.split(separator: "_").filter { !$0.isEmpty }
-                return "Инструмент " + (parts.last.map(String.init) ?? tool)
+                return L("Инструмент ", "Tool ") + (parts.last.map(String.init) ?? tool)
             }
             return tool
         }

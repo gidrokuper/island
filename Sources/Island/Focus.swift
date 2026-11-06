@@ -75,14 +75,14 @@ final class FocusWatcher {
     }
 
     static func fallbackName(_ id: String) -> String {
-        if id.contains("sleep") { return "Сон" }
-        if id.contains("work") { return "Работа" }
-        if id.contains("personal") { return "Личное" }
-        if id.contains("driving") { return "Вождение" }
-        if id.contains("fitness") { return "Фитнес" }
-        if id.contains("gaming") { return "Игры" }
-        if id.contains("reading") { return "Чтение" }
-        return "Не беспокоить"
+        if id.contains("sleep") { return L("Сон", "Sleep") }
+        if id.contains("work") { return L("Работа", "Work") }
+        if id.contains("personal") { return L("Личное", "Personal") }
+        if id.contains("driving") { return L("Вождение", "Driving") }
+        if id.contains("fitness") { return L("Фитнес", "Fitness") }
+        if id.contains("gaming") { return L("Игры", "Gaming") }
+        if id.contains("reading") { return L("Чтение", "Reading") }
+        return L("Не беспокоить", "Do Not Disturb")
     }
 
     static func color(_ tint: String, id: String) -> Color {

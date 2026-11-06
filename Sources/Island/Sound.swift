@@ -251,6 +251,7 @@ final class SoundSystem: ObservableObject {
     func demoDevice(inCase: Bool) -> OutputDevice {
         var d = outputs.first { $0.airpods } ?? OutputDevice(id: 0, name: "AirPods Pro", transport: kAudioDeviceTransportTypeBluetooth,
                                                              symbol: "airpods.pro", battery: 82, left: 82, right: 85)
+        d.name = "AirPods Pro"
         if d.left == nil { d.left = 82; d.right = 85 }
         d.caseLevel = inCase ? (d.caseLevel ?? 64) : nil
         return d

@@ -71,7 +71,7 @@ struct IslandView: View {
         let tr: CGFloat = big ? 14 : 7
         let br: CGFloat = big ? 34 : (mode == .volume || mode == .working ? 18 : 11)
         /* полупрозрачный фон; крупные панели чуть плотнее, чтобы текст читался */
-        let fill = Color.black.opacity(big ? 0.86 : 0.78)
+        let fill = Color.black.opacity(big ? min(1, Prefs.opacity + 0.08) : Prefs.opacity)
 
         return ZStack(alignment: .top) {
             NotchShape(top: tr, bottom: br)
@@ -110,8 +110,9 @@ struct IslandView: View {
                 Artwork(image: m.art, size: 20, radius: 5)
                     .matchedGeometryEffect(id: "art", in: ns)
                 Spacer()
-                /* искра Claude вместо эквалайзера */
-                Spark(state: .idle).frame(width: 16, height: 16)
+                /* искра Claude или эквалайзер — в настройках плеера */
+                if Prefs.rightIcon == "bars" { Bars(playing: true).frame(width: 18, height: 12) }
+                else { Spark(state: .idle).frame(width: 16, height: 16) }
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
@@ -122,7 +123,7 @@ struct IslandView: View {
         case .flash:
             HStack {
                 Image(systemName: "bolt.fill").foregroundStyle(.green)
-                Text("Зарядка").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                Text(L("Зарядка", "Charging")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
                 Text("\(m.battery.level)%").font(.system(size: 13, weight: .semibold)).monospacedDigit()
                     .foregroundStyle(.green)
@@ -178,7 +179,7 @@ struct WorkingWing: View {
             /* если играет музыка — плеер остаётся по бокам чёлки */
             /* справа от выреза — искра Claude (вращается, пока он работает), слева — обложка, если играет музыка */
             HStack {
-                if let t = m.track, t.playing {
+                if m.musicOn {
                     Artwork(image: m.art, size: 20, radius: 5)
                 }
                 Spacer()
@@ -191,7 +192,7 @@ struct WorkingWing: View {
                     Text(a.project).font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
                         .fixedSize()
                 }
-                Text(a?.action ?? "Думаю…")
+                Text(a?.action ?? L("Думаю…", "Thinking…"))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -258,7 +259,7 @@ struct NoticeView: View {
             HStack(spacing: 6) {
                 Text(n.source).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
-                Text("сейчас").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text(L("сейчас", "now")).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 22)
             .frame(height: notch.height)
@@ -327,8 +328,8 @@ struct Expanded: View {
 
     static let dateFmt: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ru_RU")
-        f.dateFormat = "EE, d MMMM"
+        f.locale = Lang.locale
+        f.setLocalizedDateFormatFromTemplate("EEEdMMMM")
         return f
     }()
 
@@ -483,7 +484,7 @@ struct Btn: View {
 struct Clock: View {
     static let timeFmt: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ru_RU")
+        f.locale = Lang.locale
         f.dateFormat = "HH:mm"
         return f
     }()
@@ -494,7 +495,7 @@ struct Clock: View {
                 Text(Self.timeFmt.string(from: ctx.date))
                     .font(.system(size: 52, weight: .light, design: .rounded)).monospacedDigit()
                 Spacer()
-                Text("Ничего не играет")
+                Text(L("Ничего не играет", "Nothing playing"))
                     .font(.system(size: 13)).foregroundStyle(.secondary)
             }
         }
@@ -586,7 +587,7 @@ struct DeviceWing: View {
                 Ring(level: Double(b) / 100, color: b <= 20 ? .red : .green)
                     .frame(width: 14, height: 14)
             } else {
-                Text("Подключены").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                Text(L("Подключены", "Connected")).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 14)
@@ -605,7 +606,7 @@ struct AirPodsWing: View {
         VStack(spacing: 0) {
             HStack {
                 Circle().fill(.green).frame(width: 6, height: 6)
-                Text("Подключены").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Text(L("Подключены", "Connected")).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -614,7 +615,7 @@ struct AirPodsWing: View {
                 AirPodsArt(d: d).frame(width: 64, height: 56)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(d.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
-                    Text(d.inCase ? "В кейсе" : "В ушах").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text(d.inCase ? L("В кейсе", "In case") : L("В ушах", "In ears")).font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
                 HStack(spacing: 12) {
@@ -780,7 +781,7 @@ struct OutputIcon: View {
             .background(Circle().fill(active ? Color.blue : .white.opacity(hover ? 0.2 : 0.1)))
             .scaleEffect(hover ? 1.12 : 1)
             .contentShape(Circle())
-            .help(d.builtIn ? "Динамики MacBook" : d.name + (d.battery.map { " · \($0)%" } ?? ""))
+            .help(d.builtIn ? L("Динамики MacBook", "MacBook Speakers") : d.name + (d.battery.map { " · \($0)%" } ?? ""))
             .onHover { h in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { hover = h } }
             .onTapGesture(perform: action)
     }
@@ -851,7 +852,7 @@ struct FocusWing: View {
             Text(e.mode.name)
                 .font(.system(size: 12, weight: .semibold)).lineLimit(1)
                 .foregroundStyle(e.on ? tint : .white.opacity(0.6))
-            Text(e.on ? "вкл" : "выкл")
+            Text(e.on ? L("вкл", "on") : L("выкл", "off"))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
         }

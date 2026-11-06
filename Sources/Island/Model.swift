@@ -35,7 +35,7 @@ struct Activity: Equatable, Identifiable {
     var started: Date
     var bundle: String?
     var last: Date
-    var action = "Думаю…"
+    var action = L("Думаю…", "Thinking…")
 }
 
 struct Notice: Equatable, Identifiable {
@@ -103,6 +103,15 @@ final class IslandModel: ObservableObject {
     private var noticeWork: DispatchWorkItem?
     private var queue: [Notice] = []
 
+    /* музыка играет и её показ включён в настройках */
+    var musicOn: Bool { track?.playing == true && Prefs.showMusic }
+
+    /* настройки поменялись в меню — перерисовать */
+    func prefsChanged() {
+        objectWillChange.send()
+        recompute()
+    }
+
     private func recompute() {
         let m: Mode
         if notice != nil { m = .notice }
@@ -112,7 +121,7 @@ final class IslandModel: ObservableObject {
         else if connected != nil { m = .device }
         else if flash { m = .flash }
         else if !activities.isEmpty { m = .working }
-        else if track?.playing == true { m = .music }
+        else if musicOn { m = .music }
         else { m = .idle }
         guard m != mode else { return }
         let a = bodySize(mode), b = bodySize(m)
@@ -127,7 +136,7 @@ final class IslandModel: ObservableObject {
         if connected != nil { return .device }
         if flash { return .flash }
         if !activities.isEmpty { return .working }
-        if track?.playing == true { return .music }
+        if musicOn { return .music }
         return .idle
     }
 
@@ -143,8 +152,8 @@ final class IslandModel: ObservableObject {
                 (s as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 11, weight: wt)]).width
             }
             /* играет музыка — остров держит размер плеера, текст обрезается */
-            if track?.playing == true { return CGSize(width: n.width + 2 * 46, height: n.height + 24) }
-            var cw: CGFloat = 12 + 6 + w(a?.action ?? "Думаю…", .medium) + 6 + 32 + 24
+            if musicOn { return CGSize(width: n.width + 2 * 46, height: n.height + 24) }
+            var cw: CGFloat = 12 + 6 + w(a?.action ?? L("Думаю…", "Thinking…"), .medium) + 6 + 32 + 24
             if let p = a?.project, !p.isEmpty { cw += w(p, .bold) + 6 }
             if activities.count > 1 { cw += 22 }
             return CGSize(width: min(max(cw, n.width + 40), n.width + 150), height: n.height + 24)
@@ -206,6 +215,7 @@ final class IslandModel: ObservableObject {
     }
 
     static func russian(_ message: String) -> String {
+        guard Lang.russian else { return message }
         if message.lowercased().contains("waiting for your input") { return "Ждёт вашего ответа" }
         if let r = message.range(of: "permission to use ") {
             return "Просит разрешение: " + message[r.upperBound...]
@@ -238,16 +248,16 @@ final class IslandModel: ObservableObject {
             lastHookNotice = Date()
             let a = activities.first { $0.session == sid }
             activities.removeAll { $0.session == sid }
-            var title = project.isEmpty ? "Готово" : "\(project) — готово"
-            if let a, Date().timeIntervalSince(a.started) >= 5 { title += " за " + clock(Date().timeIntervalSince(a.started)) }
-            show(Notice(kind: .done, source: "Claude Code", title: title,
-                        body: i["summary"] ?? "", bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle))
+            var title = project.isEmpty ? L("Готово", "Done") : "\(project) — " + L("готово", "done")
+            if let a, Date().timeIntervalSince(a.started) >= 5 { title += L(" за ", " in ") + clock(Date().timeIntervalSince(a.started)) }
+            if Prefs.claudeNotices { show(Notice(kind: .done, source: "Claude Code", title: title,
+                        body: i["summary"] ?? "", bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle)) }
         case "Notification":
             lastHookNotice = Date()
             let a = activities.first { $0.session == sid }
-            show(Notice(kind: .attention, source: "Claude Code",
-                        title: project.isEmpty ? "Claude ждёт вас" : "\(project) — нужны вы",
-                        body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle))
+            if Prefs.claudeNotices { show(Notice(kind: .attention, source: "Claude Code",
+                        title: project.isEmpty ? L("Claude ждёт вас", "Claude needs you") : "\(project) — " + L("нужны вы", "needs you"),
+                        body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle)) }
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
         case "SoundMenu":
@@ -255,7 +265,7 @@ final class IslandModel: ObservableObject {
         case "Demo":
             showDevice(sound.demoDevice(inCase: i["message"] == "case"))
         case "Notify":
-            show(Notice(kind: .info, source: i["source"] ?? "Остров", title: i["title"] ?? "",
+            show(Notice(kind: .info, source: i["source"] ?? L("Остров", "Island"), title: i["title"] ?? "",
                         body: i["message"] ?? "", bundle: bundle, icon: bundle ?? Bundle.main.bundleIdentifier))
         default:
             break
@@ -273,7 +283,7 @@ final class IslandModel: ObservableObject {
         if notice == nil {
             notice = n
             NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
-            scheduleDismiss(after: n.kind == .attention ? 9 : 6)
+            scheduleDismiss(after: n.kind == .attention ? max(9, Prefs.noticeSeconds) : Prefs.noticeSeconds)
         } else {
             queue.append(n)
         }
@@ -342,7 +352,8 @@ final class IslandModel: ObservableObject {
     func systemNote(_ n: SystemNote) {
         if n.bundle == Bundle.main.bundleIdentifier { return }
         /* в режиме фокуса не мешаем */
-        if focus.current != nil { return }
+        guard Prefs.appNotices else { return }
+        if Prefs.quietInFocus && focus.current != nil { return }
         /* у Claude Code уже есть своё уведомление из хука — без дублей */
         if n.bundle == claudeBundle && Date().timeIntervalSince(lastHookNotice) < 20 { return }
         let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: n.bundle)
@@ -461,7 +472,8 @@ final class MusicSource {
 
     func current() -> Track? {
         var found: [Track] = []
-        for a in Self.apps where isRunning(a.bundle) {
+        let src = Prefs.musicSource
+        for a in Self.apps where isRunning(a.bundle) && (src == "all" || (src == "spotify") == (a.name == "Spotify")) {
             if let t = read(a.name) { found.append(t) }
         }
         return found.first { $0.playing } ?? found.first

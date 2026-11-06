@@ -126,22 +126,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        let login = ClosureItem("Запускать при входе") {
+        let login = ClosureItem(L("Запускать при входе", "Open at Login")) {
             let svc = SMAppService.mainApp
             if svc.status == .enabled { try? svc.unregister() } else { try? svc.register() }
         }
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
-        menu.addItem(ClosureItem("Проверить уведомление") { [weak self] in
+        menu.addItem(ClosureItem(L("Проверить уведомление", "Test Notification")) { [weak self] in
             self?.setExpanded(false)
-            self?.model.show(Notice(kind: .info, source: "Остров", title: "Проверка уведомления",
-                                    body: "Так будут выглядеть сообщения от Claude Code.", bundle: claudeBundle, icon: claudeBundle))
+            self?.model.show(Notice(kind: .info, source: L("Остров", "Island"), title: L("Проверка уведомления", "Test notification"),
+                                    body: L("Так будут выглядеть сообщения от Claude Code.", "This is how Claude Code messages will look."), bundle: claudeBundle, icon: claudeBundle))
         })
         if !model.focus.readable || !model.system.readable {
-            menu.addItem(ClosureItem("Показывать фокус и уведомления…") { FocusWatcher.openPrivacySettings() })
+            menu.addItem(ClosureItem(L("Показывать фокус и уведомления…", "Show Focus and Notifications…")) { FocusWatcher.openPrivacySettings() })
         }
         menu.addItem(.separator())
-        menu.addItem(ClosureItem("Выйти") { NSApp.terminate(nil) })
+        let m = model
+        func changed() { m.prefsChanged() }
+        func radio<T: Equatable>(_ title: String, _ items: [(String, T)], _ cur: T, _ set: @escaping (T) -> Void) -> NSMenuItem {
+            let root = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            let sub = NSMenu()
+            for (name, v) in items {
+                let it = ClosureItem(name) { set(v); changed() }
+                it.state = v == cur ? .on : .off
+                sub.addItem(it)
+            }
+            root.submenu = sub
+            return root
+        }
+        func toggle(_ title: String, _ on: Bool, _ set: @escaping (Bool) -> Void) -> ClosureItem {
+            let it = ClosureItem(title) { set(!on); changed() }
+            it.state = on ? .on : .off
+            return it
+        }
+
+        menu.addItem(radio(L("Прозрачность", "Transparency"),
+                           [(L("Выключена", "Off"), 1.0), (L("Лёгкая", "Light"), 0.88),
+                            (L("Средняя", "Medium"), 0.78), (L("Сильная", "Strong"), 0.62)],
+                           Prefs.opacity) { Prefs.opacity = $0 })
+
+        let notes = NSMenuItem(title: L("Уведомления", "Notifications"), action: nil, keyEquivalent: "")
+        let nm = NSMenu()
+        nm.addItem(toggle(L("Уведомления приложений", "App notifications"), Prefs.appNotices) { Prefs.appNotices = $0 })
+        nm.addItem(toggle(L("Уведомления Claude Code", "Claude Code notifications"), Prefs.claudeNotices) { Prefs.claudeNotices = $0 })
+        nm.addItem(toggle(L("Не показывать в режиме фокуса", "Silence during Focus"), Prefs.quietInFocus) { Prefs.quietInFocus = $0 })
+        nm.addItem(.separator())
+        nm.addItem(radio(L("Время на экране", "Time on screen"),
+                         [(L("4 секунды", "4 seconds"), 4.0), (L("6 секунд", "6 seconds"), 6.0), (L("10 секунд", "10 seconds"), 10.0)],
+                         Prefs.noticeSeconds) { Prefs.noticeSeconds = $0 })
+        notes.submenu = nm
+        menu.addItem(notes)
+
+        let player = NSMenuItem(title: L("Плеер", "Player"), action: nil, keyEquivalent: "")
+        let pm = NSMenu()
+        pm.addItem(toggle(L("Показывать музыку у выреза", "Show music at the notch"), Prefs.showMusic) { Prefs.showMusic = $0 })
+        pm.addItem(radio(L("Источник", "Source"),
+                         [(L("Музыка и Spotify", "Music and Spotify"), "all"), ("Spotify", "spotify"), (L("Музыка", "Music"), "music")],
+                         Prefs.musicSource) { Prefs.musicSource = $0 })
+        pm.addItem(radio(L("Справа от выреза", "Right of the notch"),
+                         [(L("Искра Claude", "Claude spark"), "spark"), (L("Эквалайзер", "Equalizer"), "bars")],
+                         Prefs.rightIcon) { Prefs.rightIcon = $0 })
+        player.submenu = pm
+        menu.addItem(player)
+
+        menu.addItem(radio(L("Язык", "Language"), [("Русский", "ru"), ("English", "en")],
+                           Lang.russian ? "ru" : "en") { UserDefaults.standard.set($0, forKey: "lang") })
+        menu.addItem(.separator())
+        menu.addItem(ClosureItem(L("Выйти", "Quit")) { NSApp.terminate(nil) })
         return menu
     }
 }
