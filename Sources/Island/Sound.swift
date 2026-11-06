@@ -8,6 +8,13 @@ struct OutputDevice: Identifiable, Equatable {
     var transport: UInt32
     var symbol: String
     var battery: Int?
+    /* AirPods: заряд левого, правого и кейса (кейс виден, когда наушники в нём) */
+    var left: Int? = nil
+    var right: Int? = nil
+    var caseLevel: Int? = nil
+
+    var airpods: Bool { symbol.hasPrefix("airpods") }
+    var inCase: Bool { caseLevel != nil }
 
     var bluetooth: Bool {
         transport == kAudioDeviceTransportTypeBluetooth || transport == kAudioDeviceTransportTypeBluetoothLE
@@ -29,7 +36,8 @@ final class SoundSystem: ObservableObject {
     private let sys = AudioObjectID(kAudioObjectSystemObject)
     private var known: Set<AudioDeviceID> = []
     private var watched: Set<AudioDeviceID> = []
-    private var bt: [String: (symbol: String, battery: Int?)] = [:]
+    private var bt: [String: BTInfo] = [:]
+    struct BTInfo { var symbol: String; var battery: Int?; var left: Int?; var right: Int?; var caseLevel: Int? }
     private var btBusy = false
 
     func start() {
@@ -201,7 +209,7 @@ final class SoundSystem: ObservableObject {
             let pipe = Pipe()
             p.standardOutput = pipe
             p.standardError = FileHandle.nullDevice
-            var info: [String: (symbol: String, battery: Int?)] = [:]
+            var info: [String: BTInfo] = [:]
             if (try? p.run()) != nil {
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 p.waitUntilExit()
@@ -215,8 +223,10 @@ final class SoundSystem: ObservableObject {
                             }
                             let lr = [pct("device_batteryLevelLeft"), pct("device_batteryLevelRight")].compactMap { $0 }
                             let level = lr.min() ?? pct("device_batteryLevelMain") ?? pct("device_batteryLevel")
-                            info[name] = (Self.airpodsSymbol(product: v["device_productID"] as? String ?? "",
-                                                             minor: v["device_minorType"] as? String ?? ""), level)
+                            info[name] = BTInfo(symbol: Self.airpodsSymbol(product: v["device_productID"] as? String ?? "",
+                                                                           minor: v["device_minorType"] as? String ?? ""),
+                                                battery: level, left: pct("device_batteryLevelLeft"),
+                                                right: pct("device_batteryLevelRight"), caseLevel: pct("device_batteryLevelCase"))
                         }
                     }
                 }
@@ -226,11 +236,23 @@ final class SoundSystem: ObservableObject {
                 self.bt = info
                 self.outputs = self.outputs.map { d in
                     var d = d
-                    if let i = info[d.name] { d.symbol = i.symbol; d.battery = i.battery }
+                    if let i = info[d.name] {
+                        d.symbol = i.symbol; d.battery = i.battery
+                        d.left = i.left; d.right = i.right; d.caseLevel = i.caseLevel
+                    }
                     return d
                 }
                 done?()
             }
         }
+    }
+
+    /* для проверки и скриншотов: подключённые наушники или выдуманные AirPods Pro */
+    func demoDevice(inCase: Bool) -> OutputDevice {
+        var d = outputs.first { $0.airpods } ?? OutputDevice(id: 0, name: "AirPods Pro", transport: kAudioDeviceTransportTypeBluetooth,
+                                                             symbol: "airpods.pro", battery: 82, left: 82, right: 85)
+        if d.left == nil { d.left = 82; d.right = 85 }
+        d.caseLevel = inCase ? (d.caseLevel ?? 64) : nil
+        return d
     }
 }

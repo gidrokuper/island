@@ -148,7 +148,9 @@ final class IslandModel: ObservableObject {
             let minW = track?.playing == true ? n.width + 2 * 46 : n.width + 40
             return CGSize(width: min(max(cw, minW), 440), height: n.height + 26)
         case .flash: return CGSize(width: n.width + 2 * 64, height: n.height)
-        case .device: return CGSize(width: n.width + 2 * 70, height: n.height)
+        case .device:
+            if connected?.airpods == true { return CGSize(width: max(n.width + 2 * 110, 400), height: n.height + 66) }
+            return CGSize(width: n.width + 2 * 70, height: n.height)
         case .focus: return CGSize(width: n.width + 2 * 92, height: n.height)
         case .volume: return CGSize(width: max(n.width + 70, 290), height: n.height + 30)
         case .notice: return CGSize(width: max(440, n.width + 240), height: n.height + 70)
@@ -247,6 +249,8 @@ final class IslandModel: ObservableObject {
                         body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle))
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
+        case "Demo":
+            showDevice(sound.demoDevice(inCase: i["message"] == "case"))
         case "Notify":
             show(Notice(kind: .info, source: i["source"] ?? "Остров", title: i["title"] ?? "",
                         body: i["message"] ?? "", bundle: bundle, icon: bundle ?? Bundle.main.bundleIdentifier))
@@ -379,7 +383,7 @@ final class IslandModel: ObservableObject {
         connected = d
         let w = DispatchWorkItem { [weak self] in self?.connected = nil }
         deviceWork = w
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: w)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (d.airpods ? 6 : 4), execute: w)
     }
 
     private func showFlash() {

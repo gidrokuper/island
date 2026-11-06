@@ -13,6 +13,9 @@ enum CLI {
         switch args.first {
         case "hook":
             info = hook()
+        case "demo":
+            /* Island demo airpods | Island demo case — показать анимацию подключения */
+            info = ["event": "Demo", "message": args.count > 1 ? args[1] : "airpods"]
         case "notify":
             info = ["event": "Notify",
                     "title": args.count > 1 ? args[1] : "Остров",

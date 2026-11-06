@@ -134,10 +134,16 @@ struct IslandView: View {
                 .transition(.island)
         case .device:
             if let d = m.connected {
-                DeviceWing(d: d)
-                    .frame(height: m.notch.height)
-                    .id(d.id)
-                    .transition(.island)
+                if d.airpods {
+                    AirPodsWing(d: d, notch: m.notch)
+                        .id("\(d.id)-\(d.inCase)")
+                        .transition(.island)
+                } else {
+                    DeviceWing(d: d)
+                        .frame(height: m.notch.height)
+                        .id(d.id)
+                        .transition(.island)
+                }
             }
         case .notice:
             if let n = m.notice {
@@ -578,6 +584,121 @@ struct DeviceWing: View {
         .onAppear {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.55).delay(0.12)) { shown = true }
         }
+    }
+}
+
+/* AirPods подключились: живая картинка (наушники или кейс — смотря где они), имя и заряд. */
+struct AirPodsWing: View {
+    let d: OutputDevice
+    let notch: CGSize
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Circle().fill(.green).frame(width: 6, height: 6)
+                Text("Подключены").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .frame(height: notch.height)
+            HStack(spacing: 14) {
+                AirPodsArt(d: d).frame(width: 64, height: 56)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(d.name).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+                    Text(d.inCase ? "В кейсе" : "В ушах").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                HStack(spacing: 12) {
+                    if let l = d.left { Charge(level: l, symbol: budSymbol(d, left: true)) }
+                    if let r = d.right { Charge(level: r, symbol: budSymbol(d, left: false)) }
+                    if let c = d.caseLevel { Charge(level: c, symbol: caseSymbol(d)) }
+                    if d.left == nil && d.right == nil, let b = d.battery { Charge(level: b, symbol: d.symbol) }
+                }
+            }
+            .padding(.horizontal, 20)
+            .frame(maxHeight: .infinity)
+        }
+    }
+}
+
+func budSymbol(_ d: OutputDevice, left: Bool) -> String {
+    let pro = d.symbol == "airpods.pro"
+    return (pro ? "airpodpro." : "airpod.") + (left ? "left" : "right")
+}
+
+func caseSymbol(_ d: OutputDevice) -> String {
+    switch d.symbol {
+    case "airpods.pro": return "airpodspro.chargingcase.wireless.fill"
+    case "airpods.gen3": return "airpods.gen3.chargingcase.wireless.fill"
+    case "airpods.gen4": return "airpods.gen4.chargingcase.wireless.fill"
+    default: return "airpods.chargingcase.fill"
+    }
+}
+
+/* Заряд одной части: кольцо, внутри значок, под ним проценты. */
+struct Charge: View {
+    let level: Int
+    let symbol: String
+    var color: Color { level <= 20 ? .red : .green }
+    var body: some View {
+        VStack(spacing: 3) {
+            ZStack {
+                Ring(level: Double(level) / 100, color: color).frame(width: 26, height: 26)
+                Image(systemName: symbol).font(.system(size: 10, weight: .medium))
+            }
+            Text("\(level)%").font(.system(size: 10, weight: .semibold)).monospacedDigit().foregroundStyle(.secondary)
+        }
+    }
+}
+
+/* Живая картинка: наушники покачиваются в воздухе, кейс поворачивается, наушники выглядывают из него. */
+struct AirPodsArt: View {
+    let d: OutputDevice
+    @State private var shown = false
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            Group {
+                if d.symbol == "airpods.max" {
+                    Image(systemName: "airpods.max")
+                        .font(.system(size: 36, weight: .regular))
+                        .rotation3DEffect(.degrees(sin(t * 1.3) * 22), axis: (0, 1, 0), perspective: 0.5)
+                        .offset(y: sin(t * 2) * 2)
+                        .scaleEffect(shown ? 1 : 0.3)
+                } else if d.inCase {
+                    ZStack {
+                        Circle().fill(Color.green).frame(width: 7, height: 7).blur(radius: 3)
+                            .opacity(0.45 + 0.4 * sin(t * 3)).offset(y: 20)
+                        HStack(spacing: 1) {
+                            Image(systemName: budSymbol(d, left: true))
+                            Image(systemName: budSymbol(d, left: false))
+                        }
+                        .font(.system(size: 14))
+                        .offset(y: shown ? -13 + sin(t * 2.2) * 1.5 : 4)
+                        .opacity(shown ? 1 : 0)
+                        Image(systemName: caseSymbol(d))
+                            .font(.system(size: 32))
+                            .rotation3DEffect(.degrees(sin(t * 1.1) * 16), axis: (0, 1, 0), perspective: 0.5)
+                            .offset(y: 6)
+                            .scaleEffect(shown ? 1 : 0.3)
+                    }
+                } else {
+                    HStack(spacing: 2) {
+                        Image(systemName: budSymbol(d, left: true))
+                            .rotationEffect(.degrees(-6 + sin(t * 1.6) * 6))
+                            .offset(x: shown ? 0 : 16, y: sin(t * 2) * 3)
+                        Image(systemName: budSymbol(d, left: false))
+                            .rotationEffect(.degrees(6 - sin(t * 1.6 + 0.7) * 6))
+                            .offset(x: shown ? 0 : -16, y: sin(t * 2 + 1.3) * 3)
+                    }
+                    .font(.system(size: 30))
+                    .opacity(shown ? 1 : 0)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onAppear { withAnimation(.spring(response: 0.6, dampingFraction: 0.55).delay(0.1)) { shown = true } }
     }
 }
 
