@@ -48,6 +48,8 @@ struct Notice: Equatable, Identifiable {
     var bundle: String?
     /* чья иконка в уведомлении */
     var icon: String?
+    /* фото отправителя (Telegram и др.) — вместо иконки приложения */
+    var avatar: NSImage? = nil
     var at = Date()
 }
 
@@ -330,7 +332,7 @@ final class IslandModel: ObservableObject {
         let app = url.map { FileManager.default.displayName(atPath: $0.path).replacingOccurrences(of: ".app", with: "") } ?? n.bundle
         let body = [n.subtitle, n.body].filter { !$0.isEmpty }.joined(separator: " — ")
         show(Notice(kind: .info, source: app, title: n.title.isEmpty ? app : n.title,
-                    body: body, bundle: n.bundle, icon: n.bundle))
+                    body: body, bundle: n.bundle, icon: n.bundle, avatar: n.image))
     }
 
     func showFocus(_ e: FocusEvent) {

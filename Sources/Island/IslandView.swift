@@ -156,7 +156,18 @@ struct WorkingWing: View {
     var body: some View {
         let a = m.activities.last
         VStack(spacing: 0) {
-            Color.clear.frame(height: m.notch.height)
+            /* если играет музыка — плеер остаётся по бокам чёлки */
+            HStack {
+                if let t = m.track, t.playing {
+                    Artwork(image: m.art, size: 20, radius: 5)
+                    Spacer()
+                    Bars(playing: true).frame(width: 18, height: 12)
+                } else {
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(height: m.notch.height)
             HStack(spacing: 7) {
                 Spark(state: .working).frame(width: 14, height: 14)
                 if let a, !a.project.isEmpty {
@@ -237,7 +248,20 @@ struct NoticeView: View {
 
             HStack(alignment: .center, spacing: 14) {
                 /* иконка приложения, в углу — значок статуса */
-                SourceIcon(bundle: n.icon, size: 40)
+                Group {
+                    if let a = n.avatar {
+                        /* аватарка отправителя, в углу — иконка приложения */
+                        Image(nsImage: a).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40).clipShape(Circle())
+                            .overlay(alignment: .bottomTrailing) {
+                                SourceIcon(bundle: n.icon, size: 17)
+                                    .background(Circle().fill(.black).padding(-1.5))
+                                    .offset(x: 3, y: 3)
+                            }
+                    } else {
+                        SourceIcon(bundle: n.icon, size: 40)
+                    }
+                }
                     .overlay(alignment: .bottomTrailing) {
                         if n.kind != .info {
                             Image(systemName: symbol)

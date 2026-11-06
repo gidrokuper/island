@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import SQLite3
 
 struct SystemNote {
@@ -6,6 +6,8 @@ struct SystemNote {
     var title: String
     var subtitle: String
     var body: String
+    /* картинка из уведомления: у Telegram это аватарка отправителя */
+    var image: NSImage? = nil
 }
 
 /*
@@ -79,8 +81,13 @@ final class SystemNotifications {
             if let s = req[k] as? String { return s }
             return (req[k] as? [Any])?.compactMap { $0 as? String }.first ?? ""
         }
+        /* вложение читаем сразу: приложение может убрать уведомление вместе с файлом */
+        let image = (req["atta"] as? [[String: Any]])?
+            .first { ($0["uti"] as? String).map { $0.hasPrefix("public.") && $0 != "public.data" } ?? false }
+            .flatMap { $0["pat"] as? String }
+            .flatMap { NSImage(contentsOfFile: $0) }
         let n = SystemNote(bundle: (p["app"] as? String) ?? bundle,
-                           title: text("titl"), subtitle: text("subt"), body: text("body"))
+                           title: text("titl"), subtitle: text("subt"), body: text("body"), image: image)
         return n.title.isEmpty && n.body.isEmpty ? nil : n
     }
 }
