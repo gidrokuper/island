@@ -134,7 +134,7 @@ final class IslandModel: ObservableObject {
     func bodySize(_ m: Mode) -> CGSize {
         let n = notch
         switch m {
-        case .idle: return n
+        case .idle: return CGSize(width: n.width + 2 * 34, height: n.height)  /* искра Claude справа */
         case .music: return CGSize(width: n.width + 2 * 46, height: n.height)
         case .working:
             /* по ширине текста — компактно, как плашка громкости */

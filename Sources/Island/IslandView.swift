@@ -97,13 +97,21 @@ struct IslandView: View {
     func content(_ mode: IslandModel.Mode) -> some View {
         switch mode {
         case .idle:
-            Color.clear
+            /* в покое — искра Claude справа от выреза, вместо значка в строке меню */
+            HStack {
+                Spacer()
+                Spark(state: .idle).frame(width: 16, height: 16)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: m.notch.height)
+            .transition(.island)
         case .music:
             HStack {
                 Artwork(image: m.art, size: 20, radius: 5)
                     .matchedGeometryEffect(id: "art", in: ns)
                 Spacer()
-                Bars(playing: m.track?.playing == true).frame(width: 18, height: 12)
+                /* искра Claude вместо эквалайзера */
+                Spark(state: .idle).frame(width: 16, height: 16)
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
@@ -168,19 +176,17 @@ struct WorkingWing: View {
         let a = m.activities.last
         VStack(spacing: 0) {
             /* если играет музыка — плеер остаётся по бокам чёлки */
+            /* справа от выреза — искра Claude (вращается, пока он работает), слева — обложка, если играет музыка */
             HStack {
                 if let t = m.track, t.playing {
                     Artwork(image: m.art, size: 20, radius: 5)
-                    Spacer()
-                    Bars(playing: true).frame(width: 18, height: 12)
-                } else {
-                    Spacer()
                 }
+                Spacer()
+                Spark(state: .working).frame(width: 16, height: 16)
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
             HStack(spacing: 6) {
-                Spark(state: .working).frame(width: 12, height: 12)
                 if let a, !a.project.isEmpty {
                     Text(a.project).font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
                         .fixedSize()
@@ -355,10 +361,11 @@ struct Expanded: View {
                 .padding(.top, 14)
 
             if !m.activities.isEmpty {
+                /* что делает Claude — по центру */
                 HStack(spacing: 8) {
                     ForEach(m.activities.suffix(3)) { a in Chip(a: a) }
-                    Spacer(minLength: 0)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal, 22)
                 .padding(.top, 14)
             }
