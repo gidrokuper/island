@@ -177,14 +177,14 @@ struct WorkingWing: View {
             }
             .padding(.horizontal, 12)
             .frame(height: m.notch.height)
-            HStack(spacing: 7) {
-                Spark(state: .working).frame(width: 14, height: 14)
+            HStack(spacing: 6) {
+                Spark(state: .working).frame(width: 12, height: 12)
                 if let a, !a.project.isEmpty {
-                    Text(a.project).font(.system(size: 12, weight: .bold)).foregroundStyle(.white)
+                    Text(a.project).font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
                         .fixedSize()
                 }
                 Text(a?.action ?? "Думаю…")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -198,15 +198,15 @@ struct WorkingWing: View {
                         }
                         if let a {
                             Text(clock(ctx.date.timeIntervalSince(a.started)))
-                                .font(.system(size: 12, weight: .semibold)).monospacedDigit().foregroundStyle(sparkColor)
+                                .font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(sparkColor)
                         }
                     }
                     .fixedSize()
                 }
             }
-            .frame(height: 26)
+            .frame(height: 24)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .clipped()
             .animation(.spring(response: 0.35, dampingFraction: 0.85), value: a?.action)
             Spacer(minLength: 0)

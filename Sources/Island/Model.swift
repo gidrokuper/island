@@ -140,13 +140,14 @@ final class IslandModel: ObservableObject {
             /* по ширине текста — компактно, как плашка громкости */
             let a = activities.last
             func w(_ s: String, _ wt: NSFont.Weight) -> CGFloat {
-                (s as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 12, weight: wt)]).width
+                (s as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 11, weight: wt)]).width
             }
-            var cw: CGFloat = 14 + 7 + w(a?.action ?? "Думаю…", .medium) + 7 + 38 + 32
-            if let p = a?.project, !p.isEmpty { cw += w(p, .bold) + 7 }
-            if activities.count > 1 { cw += 26 }
-            let minW = track?.playing == true ? n.width + 2 * 46 : n.width + 40
-            return CGSize(width: min(max(cw, minW), 440), height: n.height + 26)
+            /* играет музыка — остров держит размер плеера, текст обрезается */
+            if track?.playing == true { return CGSize(width: n.width + 2 * 46, height: n.height + 24) }
+            var cw: CGFloat = 12 + 6 + w(a?.action ?? "Думаю…", .medium) + 6 + 32 + 24
+            if let p = a?.project, !p.isEmpty { cw += w(p, .bold) + 6 }
+            if activities.count > 1 { cw += 22 }
+            return CGSize(width: min(max(cw, n.width + 40), n.width + 150), height: n.height + 24)
         case .flash: return CGSize(width: n.width + 2 * 64, height: n.height)
         case .device:
             if connected?.airpods == true { return CGSize(width: max(n.width + 2 * 110, 400), height: n.height + 66) }
