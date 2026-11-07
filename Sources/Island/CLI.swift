@@ -13,6 +13,9 @@ enum CLI {
         switch args.first {
         case "hook":
             info = hook()
+        case "expand":
+            /* раскрыть остров на несколько секунд — для проверки и скриншотов */
+            info = ["event": "Expand"]
         case "like":
             info = ["event": "Like"]
         case "soundmenu":

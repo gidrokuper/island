@@ -391,8 +391,7 @@ struct Chip: View {
         TimelineView(.periodic(from: .now, by: 1)) { ctx in
             HStack(spacing: 6) {
                 Spark(state: .working).frame(width: 13, height: 13)
-                Text(a.project.isEmpty ? "Claude Code" : a.project)
-                    .font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                /* без названия проекта — только значок, что делается и время */
                 Text(a.action).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 Text(clock(ctx.date.timeIntervalSince(a.started)))
                     .font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(sparkColor)
@@ -414,16 +413,13 @@ struct Player: View {
             Artwork(image: m.art, size: 84, radius: 16)
                 .matchedGeometryEffect(id: "art", in: ns)
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .top, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(t.title).font(.system(size: 15, weight: .semibold)).lineLimit(1)
                     Spacer(minLength: 0)
-                    /* добавить в медиатеку — справа в углу */
-                    let done = m.saved.contains(t.key)
-                    Btn(done ? "checkmark.circle.fill" : "plus.circle", 15,
-                        tint: done ? (t.app == "Spotify" ? spotifyGreen : accent) : .white.opacity(0.7)) { m.saveTrack() }
-                        .help(L("Добавить в медиатеку", "Add to library"))
-                        .padding(.top, -6)
+                    /* «Добавить в медиатеку»: на линии названия, правый край вровень с концом полосы прогресса */
+                    SaveButton(done: m.saved.contains(t.key), tint: t.app == "Spotify" ? spotifyGreen : accent) { m.saveTrack() }
                 }
+                .frame(height: 20)
                 Text(t.artist).font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
                 TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
                     let pos = t.now(ctx.date)
@@ -458,6 +454,33 @@ struct Player: View {
                     tint: t.repeatMode > 0 ? on : .white.opacity(0.6), dot: t.repeatMode > 0) { m.control(.repeatMode) }
             }
         }
+    }
+}
+
+/* Маленькая кнопка «Добавить в медиатеку»: не раздувает строку названия. */
+struct SaveButton: View {
+    let done: Bool
+    let tint: Color
+    let action: () -> Void
+    @State private var hover = false
+    @State private var pop = false
+
+    var body: some View {
+        Image(systemName: done ? "checkmark.circle.fill" : "plus.circle")
+            .font(.system(size: 16, weight: .regular))
+            .foregroundStyle(done ? tint : .white.opacity(hover ? 0.95 : 0.6))
+            .frame(width: 20, height: 20)
+            .scaleEffect(pop ? 1.25 : (hover ? 1.08 : 1))
+            .contentShape(Circle())
+            .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hover = h } }
+            .onTapGesture {
+                action()
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) { pop = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { pop = false }
+                }
+            }
+            .help(L("Добавить в медиатеку", "Add to library"))
     }
 }
 

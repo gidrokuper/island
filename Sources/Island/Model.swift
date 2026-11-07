@@ -285,6 +285,9 @@ final class IslandModel: ObservableObject {
                         body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle)) }
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
+        case "Expand":
+            expanded = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in self?.expanded = false }
         case "Like":
             saveTrack()
         case "SoundMenu":
