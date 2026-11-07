@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import IOKit.ps
 
 struct Track: Equatable {
@@ -77,6 +78,8 @@ final class IslandModel: ObservableObject {
     @Published var expanded = false { didSet { recompute() } }
     @Published var hover = false
     @Published var track: Track? { didSet { recompute() } }
+    /* запущен ли Claude (приложение или Claude Code в терминале) — без него искру не показываем */
+    @Published var claudeRunning = false { didSet { if claudeRunning != oldValue { recompute() } } }
     @Published var art: NSImage?
     @Published var battery = Battery()
     @Published var flash = false { didSet { recompute() } }
@@ -140,10 +143,30 @@ final class IslandModel: ObservableObject {
         return .idle
     }
 
+    func refreshClaude() {
+        let app = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == claudeBundle }
+        claudeRunning = app || !activities.isEmpty || Self.processRunning("claude")
+    }
+
+    /* есть ли процесс с таким именем (Claude Code в терминале называется «claude») */
+    static func processRunning(_ name: String) -> Bool {
+        let n = proc_listallpids(nil, 0)
+        guard n > 0 else { return false }
+        var pids = [pid_t](repeating: 0, count: Int(n) + 32)
+        let got = proc_listallpids(&pids, Int32(pids.count * MemoryLayout<pid_t>.size))
+        var buf = [CChar](repeating: 0, count: 256)
+        for p in pids.prefix(Int(max(0, got))) where p > 0 {
+            if proc_name(p, &buf, UInt32(buf.count)) > 0, String(cString: buf) == name { return true }
+        }
+        return false
+    }
+
     func bodySize(_ m: Mode) -> CGSize {
         let n = notch
         switch m {
-        case .idle: return CGSize(width: n.width + 2 * 34, height: n.height)  /* искра Claude справа */
+        case .idle:
+            /* искра Claude у выреза; Claude закрыт — только сам вырез */
+            return claudeRunning ? CGSize(width: n.width + 2 * 34, height: n.height) : n
         case .music: return CGSize(width: n.width + 2 * 46, height: n.height)
         case .working:
             /* по ширине текста — компактно, как плашка громкости */
@@ -180,6 +203,7 @@ final class IslandModel: ObservableObject {
 
     func start() {
         refreshBattery(initial: true)
+        refreshClaude()
         refreshMusic()
         sound.onConnect = { [weak self] d in self?.showDevice(d) }
         sound.onVolumeChange = { [weak self] in self?.showVolume() }
@@ -196,6 +220,7 @@ final class IslandModel: ObservableObject {
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in self?.refreshMusic() }
         Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
             self?.refreshBattery(initial: false)
+            self?.refreshClaude()
             self?.dropStale()
         }
         DistributedNotificationCenter.default().addObserver(forName: CLI.event, object: nil, queue: .main) { [weak self] n in
@@ -260,6 +285,8 @@ final class IslandModel: ObservableObject {
                         body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle)) }
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
+        case "Like":
+            saveTrack()
         case "SoundMenu":
             openSoundMenu()
         case "Demo":
@@ -317,6 +344,16 @@ final class IslandModel: ObservableObject {
     }
 
     // MARK: Музыка и батарея
+
+    /* треки, добавленные в медиатеку из острова (ключ трека) */
+    @Published var saved: Set<String> = []
+
+    /* «Добавить в медиатеку»: в Музыке — избранное, в Spotify — «Любимые треки» (его сочетание ⌥⇧B) */
+    func saveTrack() {
+        guard let t = track else { return }
+        let on = !saved.contains(t.key)
+        if music.save(t, on) { if on { saved.insert(t.key) } else { saved.remove(t.key) } }
+    }
 
     func control(_ cmd: MusicSource.Command) {
         guard let t = track else { return }
@@ -508,6 +545,25 @@ final class MusicSource {
                      key: app + ":" + p[5], artURL: p[6],
                      shuffle: p.count > 7 && p[7] == "true",
                      repeatMode: p.count > 8 ? (p[8] == "true" || p[8] == "all" ? 1 : p[8] == "one" ? 2 : 0) : 0)
+    }
+
+    /* on: добавить или убрать. Сочетание Spotify переключает, поэтому для него on не важен */
+    func save(_ t: Track, _ on: Bool) -> Bool {
+        if t.app == "Music" {
+            return run("tell application \"Music\" to set favorited of current track to \(on)") != nil
+                || run("tell application \"Music\" to set loved of current track to \(on)") != nil
+        }
+        /* у Spotify нет команды AppleScript — шлём его сочетание «Сохранить в Любимые треки» прямо приложению */
+        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").first else { return false }
+        let src = CGEventSource(stateID: .hidSystemState)
+        let b: CGKeyCode = 11
+        let flags: CGEventFlags = [.maskAlternate, .maskShift]
+        guard let down = CGEvent(keyboardEventSource: src, virtualKey: b, keyDown: true),
+              let up = CGEvent(keyboardEventSource: src, virtualKey: b, keyDown: false) else { return false }
+        down.flags = flags; up.flags = flags
+        down.postToPid(app.processIdentifier)
+        up.postToPid(app.processIdentifier)
+        return true
     }
 
     func send(_ cmd: Command, to app: String) {

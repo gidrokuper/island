@@ -13,6 +13,8 @@ enum CLI {
         switch args.first {
         case "hook":
             info = hook()
+        case "like":
+            info = ["event": "Like"]
         case "soundmenu":
             info = ["event": "SoundMenu"]
         case "demo":

@@ -28,8 +28,8 @@ A Dynamic Island for the Mac notch.</p>
 | | |
 |---|---|
 | **Claude Code** | Пока Claude работает — строка под вырезом: значок Claude, что делается сейчас («Правлю Model.swift», «Ищу в сети…»), таймер; искра Claude у выреза вращается. Несколько сессий — счётчик ×N. По окончании — уведомление с итогом. |
-| **Искра Claude** | Всегда у выреза: при музыке справа (пульсирует в такт), без музыки слева, на месте обложки. Пока Claude работает — вращается. Значок Claude из строки меню можно убрать. |
-| **Музыка** | «Музыка» и Spotify: обложка слева от выреза. При наведении — плеер: перемешать, назад, пауза, вперёд, повтор, прогресс. Пока играет музыка, остров не растягивается от длинного текста. |
+| **Искра Claude** | Всегда у выреза: при музыке справа (пульсирует в такт), без музыки слева, на месте обложки. Пока Claude работает — вращается. Значок Claude из строки меню можно убрать. Claude закрыт — искры нет, при музыке справа эквалайзер. |
+| **Музыка** | «Музыка» и Spotify: обложка слева от выреза. При наведении — плеер: перемешать, назад, пауза, вперёд, повтор, прогресс и кнопка «Добавить в медиатеку» (Spotify — «Любимые треки», Музыка — избранное). Пока играет музыка, остров не растягивается от длинного текста. |
 | **AirPods** | При подключении под камерой крутятся настоящие 3D-наушники, а если они в кейсе — 3D-кейс (SceneKit: свет, тени, блики, индикатор). Без чёрной плашки, на прозрачном фоне. Нажатие открывает системное меню «Звук»: выход, прозрачность, шумоподавление, распознавание разговора. |
 | **Уведомления** | Уведомления любых приложений; у Telegram — с аватаркой отправителя. Клик открывает приложение. |
 | **Громкость, устройства, зарядка, фокус** | Своя плашка громкости, подключение наушников и колонок, начало зарядки, режимы фокуса. |
@@ -86,6 +86,7 @@ I=~/Applications/Island.app/Contents/MacOS/Island
 $I notify "Сборка" "Готово за 42 с"   # своё уведомление
 $I demo airpods                       # показать подключение AirPods (или: demo case)
 $I soundmenu                          # открыть меню «Звук»
+$I like                               # добавить трек в медиатеку (повторно — убрать)
 ```
 
 ## Приватность
@@ -128,8 +129,8 @@ Swift + SwiftUI, без сторонних зависимостей, Swift Packa
 | | |
 |---|---|
 | **Claude Code** | While Claude works: the Claude icon, current action (“Editing Model.swift”, “Web search…”) and a timer under the notch, with the Claude spark spinning by the notch. Several sessions show ×N. A summary notification when it's done. |
-| **Claude spark** | Always by the notch: right of it while music plays (pulsing to the beat), left of it in place of the artwork otherwise. Spins while Claude works. You can hide Claude's menu bar icon. |
-| **Music** | Music and Spotify: artwork left of the notch. Hover for a player with shuffle, previous, play/pause, next, repeat and progress. Long text never stretches the island while music plays. |
+| **Claude spark** | Always by the notch: right of it while music plays (pulsing to the beat), left of it in place of the artwork otherwise. Spins while Claude works. You can hide Claude's menu bar icon. When Claude isn't running, the spark is hidden and the equalizer takes its place. |
+| **Music** | Music and Spotify: artwork left of the notch. Hover for a player with shuffle, previous, play/pause, next, repeat, progress and an “Add to library” button (Spotify Liked Songs, Music favorites). Long text never stretches the island while music plays. |
 | **AirPods** | On connect, real 3D earbuds — or the 3D case when they are in it (SceneKit, with lighting, highlights and the status light) — spin right under the camera on a transparent background. No black pill. Click to open the system Sound menu — output, Transparency, Noise Cancellation, Conversation Awareness. |
 | **Notifications** | From any app; Telegram shows the sender's avatar. Click to open the app. |
 | **Volume, devices, charging, Focus** | Custom volume HUD, headphone and speaker connections, charging, Focus modes. |

@@ -106,7 +106,7 @@ struct IslandView: View {
         case .idle:
             /* в покое — искра Claude слева от выреза, на месте обложки */
             HStack {
-                Spark(state: .idle).frame(width: 16, height: 16)
+                if m.claudeRunning { Spark(state: .idle).frame(width: 16, height: 16) }
                 Spacer()
             }
             .padding(.horizontal, 10)
@@ -118,7 +118,8 @@ struct IslandView: View {
                     .matchedGeometryEffect(id: "art", in: ns)
                 Spacer()
                 /* искра Claude или эквалайзер — в настройках плеера */
-                if Prefs.rightIcon == "bars" { Bars(playing: true).frame(width: 18, height: 12) }
+                /* Claude закрыт — вместо искры эквалайзер */
+                if Prefs.rightIcon == "bars" || !m.claudeRunning { Bars(playing: true).frame(width: 18, height: 12) }
                 else { Spark(state: .music).frame(width: 16, height: 16) }
             }
             .padding(.horizontal, 12)
@@ -413,7 +414,16 @@ struct Player: View {
             Artwork(image: m.art, size: 84, radius: 16)
                 .matchedGeometryEffect(id: "art", in: ns)
             VStack(alignment: .leading, spacing: 3) {
-                Text(t.title).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                HStack(alignment: .top, spacing: 6) {
+                    Text(t.title).font(.system(size: 15, weight: .semibold)).lineLimit(1)
+                    Spacer(minLength: 0)
+                    /* добавить в медиатеку — справа в углу */
+                    let done = m.saved.contains(t.key)
+                    Btn(done ? "checkmark.circle.fill" : "plus.circle", 15,
+                        tint: done ? (t.app == "Spotify" ? spotifyGreen : accent) : .white.opacity(0.7)) { m.saveTrack() }
+                        .help(L("Добавить в медиатеку", "Add to library"))
+                        .padding(.top, -6)
+                }
                 Text(t.artist).font(.system(size: 13)).foregroundStyle(.secondary).lineLimit(1)
                 TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
                     let pos = t.now(ctx.date)
