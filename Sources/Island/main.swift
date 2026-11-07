@@ -174,6 +174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let notes = NSMenuItem(title: L("Уведомления", "Notifications"), action: nil, keyEquivalent: "")
         let nm = NSMenu()
         nm.addItem(toggle(L("Уведомления приложений", "App notifications"), Prefs.appNotices) { Prefs.appNotices = $0 })
+        nm.addItem(toggle(L("Беззвучные уведомления", "Silent notifications"), Prefs.silentNotices) { Prefs.silentNotices = $0 })
         nm.addItem(toggle(L("Уведомления Claude Code", "Claude Code notifications"), Prefs.claudeNotices) { Prefs.claudeNotices = $0 })
         nm.addItem(toggle(L("Не показывать в режиме фокуса", "Silence during Focus"), Prefs.quietInFocus) { Prefs.quietInFocus = $0 })
         nm.addItem(.separator())

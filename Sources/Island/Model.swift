@@ -353,6 +353,8 @@ final class IslandModel: ObservableObject {
         if n.bundle == Bundle.main.bundleIdentifier { return }
         /* в режиме фокуса не мешаем */
         guard Prefs.appNotices else { return }
+        /* беззвучные (заглушённые чаты) — не показываем, если не включено в настройках */
+        if !n.hasSound && !Prefs.silentNotices { return }
         if Prefs.quietInFocus && focus.current != nil { return }
         /* у Claude Code уже есть своё уведомление из хука — без дублей */
         if n.bundle == claudeBundle && Date().timeIntervalSince(lastHookNotice) < 20 { return }

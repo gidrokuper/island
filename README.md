@@ -44,7 +44,7 @@ A Dynamic Island for the Mac notch.</p>
 |---|---|
 | Запускать при входе | Вкл / выкл |
 | Прозрачность | Выключена, лёгкая, средняя, сильная |
-| Уведомления | Уведомления приложений, уведомления Claude Code, тишина в режиме фокуса, время на экране (4 / 6 / 10 с) |
+| Уведомления | Уведомления приложений, беззвучные уведомления (по умолчанию скрыты), уведомления Claude Code, тишина в режиме фокуса, время на экране (4 / 6 / 10 с) |
 | Плеер | Показывать музыку у выреза; источник — Музыка и Spotify, только Spotify, только Музыка; справа от выреза — искра Claude или эквалайзер |
 | Язык | Русский / English |
 
@@ -135,7 +135,7 @@ Swift + SwiftUI, без сторонних зависимостей, Swift Packa
 | **Volume, devices, charging, Focus** | Custom volume HUD, headphone and speaker connections, charging, Focus modes. |
 | **Hover** | Expands: date, battery, player, volume and output, Claude sessions centered. |
 
-**Settings** (right-click the island): Open at Login · Transparency (off / light / medium / strong) · Notifications (apps, Claude Code, silence during Focus, time on screen) · Player (show music, source, spark or equalizer on the right) · Language (English / Русский, follows the system by default).
+**Settings** (right-click the island): Open at Login · Transparency (off / light / medium / strong) · Notifications (apps, silent ones — hidden by default, Claude Code, silence during Focus, time on screen) · Player (show music, source, spark or equalizer on the right) · Language (English / Русский, follows the system by default).
 
 **Install:** macOS 14+ and Command Line Tools, then
 

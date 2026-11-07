@@ -8,6 +8,8 @@ struct SystemNote {
     var body: String
     /* картинка из уведомления: у Telegram это аватарка отправителя */
     var image: NSImage? = nil
+    /* со звуком ли пришло: у беззвучных (например, заглушённый чат) в записи нет ключа soun */
+    var hasSound = true
 }
 
 /*
@@ -18,12 +20,20 @@ struct SystemNote {
 final class SystemNotifications {
     var onNote: ((SystemNote) -> Void)?
     private(set) var readable = false
-    private var lastId: Int64 = -1
+    /*
+     Новые записи ищем по времени доставки, а не по rec_id: после очистки Центра уведомлений
+     SQLite снова выдаёт номера с меньших значений, и сравнение по номеру теряло уведомления.
+    */
+    private var lastDate: Double = -1
+    private var seen: [Data] = []
+    /* первый проход только запоминает, что уже лежит в базе, — старое не показываем */
+    private var primed = false
     private let path = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Group Containers/group.com.apple.usernoted/db2/db").path
+    private let when = "COALESCE(r.delivered_date, r.request_date, 0)"
 
     func start() {
-        lastId = maxId() ?? -1
+        lastDate = maxDate() ?? -1
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in self?.tick() }
     }
 
@@ -38,39 +48,46 @@ final class SystemNotifications {
         return db
     }
 
-    private func maxId() -> Int64? {
+    private func maxDate() -> Double? {
         guard let db = open() else { return nil }
         defer { sqlite3_close(db) }
         var st: OpaquePointer?
-        guard sqlite3_prepare_v2(db, "SELECT IFNULL(MAX(rec_id), 0) FROM record", -1, &st, nil) == SQLITE_OK else {
+        guard sqlite3_prepare_v2(db, "SELECT IFNULL(MAX(\(when)), 0) FROM record r", -1, &st, nil) == SQLITE_OK else {
             readable = false
             return nil
         }
         defer { sqlite3_finalize(st) }
         guard sqlite3_step(st) == SQLITE_ROW else { return nil }
         readable = true
-        return sqlite3_column_int64(st, 0)
+        return sqlite3_column_double(st, 0)
     }
 
     private func tick() {
-        if lastId < 0 { lastId = maxId() ?? -1; return }
+        if lastDate < 0 { lastDate = maxDate() ?? -1; return }
         guard let db = open() else { return }
         defer { sqlite3_close(db) }
-        let sql = "SELECT r.rec_id, a.identifier, r.data FROM record r JOIN app a ON a.app_id = r.app_id WHERE r.rec_id > ? ORDER BY r.rec_id"
+        let sql = "SELECT \(when), a.identifier, r.data, r.uuid FROM record r JOIN app a ON a.app_id = r.app_id WHERE \(when) >= ? ORDER BY \(when)"
         var st: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK else { readable = false; return }
         defer { sqlite3_finalize(st) }
         readable = true
-        sqlite3_bind_int64(st, 1, lastId)
+        sqlite3_bind_double(st, 1, lastDate)
         var notes: [SystemNote] = []
         while sqlite3_step(st) == SQLITE_ROW {
-            lastId = max(lastId, sqlite3_column_int64(st, 0))
+            let date = sqlite3_column_double(st, 0)
+            let uuid = sqlite3_column_blob(st, 3).map { Data(bytes: $0, count: Int(sqlite3_column_bytes(st, 3))) } ?? Data()
+            /* запись с тем же временем уже показана — пропускаем */
+            if seen.contains(uuid) { continue }
+            seen.append(uuid)
+            if seen.count > 200 { seen.removeFirst(seen.count - 200) }
+            lastDate = max(lastDate, date)
             let bundle = sqlite3_column_text(st, 1).map { String(cString: $0) } ?? ""
             guard let bytes = sqlite3_column_blob(st, 2) else { continue }
             let data = Data(bytes: bytes, count: Int(sqlite3_column_bytes(st, 2)))
             if let n = Self.parse(data, bundle: bundle) { notes.append(n) }
         }
         /* если пришла пачка (например, после сна) — показываем только последние три */
+        if !primed { primed = true; return }
         for n in notes.suffix(3) { onNote?(n) }
     }
 
@@ -87,7 +104,8 @@ final class SystemNotifications {
             .flatMap { $0["pat"] as? String }
             .flatMap { NSImage(contentsOfFile: $0) }
         let n = SystemNote(bundle: (p["app"] as? String) ?? bundle,
-                           title: text("titl"), subtitle: text("subt"), body: text("body"), image: image)
+                           title: text("titl"), subtitle: text("subt"), body: text("body"), image: image,
+                           hasSound: req["soun"] != nil)
         return n.title.isEmpty && n.body.isEmpty ? nil : n
     }
 }
