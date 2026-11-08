@@ -229,7 +229,7 @@ final class IslandModel: ObservableObject {
         case .notice: return CGSize(width: max(440, n.width + 240), height: n.height + 70)
         case .expanded:
             let extra: CGFloat = activities.isEmpty ? 0 : 42
-            return CGSize(width: max(560, n.width + 340), height: n.height + 160 + extra + (Brightness.available ? 30 : 0))
+            return CGSize(width: max(560, n.width + 340), height: n.height + 160 + extra)
         }
     }
 

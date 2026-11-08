@@ -371,19 +371,6 @@ struct Expanded: View {
                 .padding(.horizontal, 22)
                 .padding(.top, 14)
 
-            /* яркость экрана — так же, как громкость */
-            if Brightness.available {
-                HStack(spacing: 10) {
-                    Image(systemName: "sun.min.fill").font(.system(size: 12)).foregroundStyle(.secondary).frame(width: 16)
-                    VolumeSlider(value: Double(m.brightness)) { m.setBrightness(Float($0)) }
-                        .frame(height: 22)
-                    Image(systemName: "sun.max.fill").font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 22)
-                .padding(.top, 6)
-                .onAppear { m.brightness = Brightness.get() }
-            }
-
             if !m.activities.isEmpty {
                 /* что делает Claude — по центру */
                 HStack(spacing: 8) {
