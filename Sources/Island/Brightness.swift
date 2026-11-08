@@ -24,27 +24,36 @@ enum Brightness {
     }
 
     /*
-     Плавный переход к значению, как у самой macOS: ~0,15 с мелкими шагами вместо одного рывка
-     (рывки на каждое нажатие выглядели как мерцание). Новое нажатие просто меняет цель.
+     Плавный переход к значению, как у самой macOS: за 0,25 с, с мягким ускорением и замедлением,
+     в «глазной» шкале (корень из яркости) — внизу шкалы шаги мельче. Текущее значение ведём сами,
+     а не читаем с экрана каждый кадр (иначе округление экрана давало дрожание на низкой яркости).
+     Новое нажатие во время перехода начинает новый переход с текущей точки.
     */
-    private static var rampTarget: Float = 0
+    private static var rampFrom: Float = 0
+    private static var rampTo: Float = 0
+    private static var rampNow: Float = -1
+    private static var rampStart = Date()
     private static var rampTimer: Timer?
+    private static let rampTime: Double = 0.25
 
     static func animate(to v: Float) {
-        rampTarget = max(0, min(1, v))
+        let target = max(0, min(1, v))
+        rampFrom = rampTimer != nil && rampNow >= 0 ? rampNow : get()
+        rampTo = target
+        rampStart = Date()
         guard rampTimer == nil else { return }
         let t = Timer(timeInterval: 1.0 / 60, repeats: true) { timer in
-            let cur = get()
-            let diff = rampTarget - cur
-            if abs(diff) < 0.004 {
-                set(rampTarget)
+            let p = min(1, Date().timeIntervalSince(rampStart) / rampTime)
+            let e = Float(p * p * (3 - 2 * p))  /* smoothstep */
+            let a = rampFrom.squareRoot(), b = rampTo.squareRoot()
+            let x = a + (b - a) * e
+            rampNow = x * x
+            set(rampNow)
+            if p >= 1 {
                 timer.invalidate()
                 rampTimer = nil
-                return
+                rampNow = -1
             }
-            /* за кадр проходим треть оставшегося, но не меньше 0,004 — мягко и быстро */
-            let step = diff > 0 ? max(diff / 3, 0.004) : min(diff / 3, -0.004)
-            set(cur + step)
         }
         RunLoop.main.add(t, forMode: .common)
         rampTimer = t
