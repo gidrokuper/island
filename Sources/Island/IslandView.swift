@@ -147,7 +147,7 @@ struct IslandView: View {
                     .transition(.island)
             }
         case .volume:
-            VolumeWing(s: m.sound, notch: m.notch)
+            VolumeWing(s: m.sound, notch: m.notch, brightness: m.hudBrightness ? Double(m.brightness) : nil)
                 .transition(.island)
         case .device:
             if let d = m.connected {
@@ -370,6 +370,19 @@ struct Expanded: View {
             SoundSection(s: m.sound)
                 .padding(.horizontal, 22)
                 .padding(.top, 14)
+
+            /* яркость экрана — так же, как громкость */
+            if Brightness.available {
+                HStack(spacing: 10) {
+                    Image(systemName: "sun.min.fill").font(.system(size: 12)).foregroundStyle(.secondary).frame(width: 16)
+                    VolumeSlider(value: Double(m.brightness)) { m.setBrightness(Float($0)) }
+                        .frame(height: 22)
+                    Image(systemName: "sun.max.fill").font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 22)
+                .padding(.top, 6)
+                .onAppear { m.brightness = Brightness.get() }
+            }
 
             if !m.activities.isEmpty {
                 /* что делает Claude — по центру */
@@ -822,7 +835,9 @@ struct OutputIcon: View {
 struct VolumeWing: View {
     @ObservedObject var s: SoundSystem
     let notch: CGSize
-    var level: Double { s.muted ? 0 : Double(s.volume) }
+    /* задано — плашка показывает яркость экрана вместо громкости */
+    var brightness: Double? = nil
+    var level: Double { brightness ?? (s.muted ? 0 : Double(s.volume)) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -857,6 +872,7 @@ struct VolumeWing: View {
     }
 
     var icon: String {
+        if brightness != nil { return level < 0.5 ? "sun.min.fill" : "sun.max.fill" }
         if level == 0 { return "speaker.slash.fill" }
         if level < 0.34 { return "speaker.wave.1.fill" }
         if level < 0.67 { return "speaker.wave.2.fill" }

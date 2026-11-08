@@ -102,7 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.ignoresMouseEvents = !rect(.device, pad: 4).contains(p)
         case .expanded:
             panel.ignoresMouseEvents = false
-            if expandedRect().contains(p) { cancel() } else { schedule(false, after: 0.16) }
+            if expandedRect().contains(p) || model.pinned > Date() { cancel() } else { schedule(false, after: 0.16) }
         default:
             let inside = rect(model.collapsedMode, pad: 6).contains(p)
             if model.hover != inside { model.hover = inside }
@@ -176,6 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         nm.addItem(toggle(L("Уведомления приложений", "App notifications"), Prefs.appNotices) { Prefs.appNotices = $0 })
         nm.addItem(toggle(L("Беззвучные уведомления", "Silent notifications"), Prefs.silentNotices) { Prefs.silentNotices = $0 })
         nm.addItem(toggle(L("Уведомления Claude Code", "Claude Code notifications"), Prefs.claudeNotices) { Prefs.claudeNotices = $0 })
+        nm.addItem(toggle(L("Показывать ответы чата Claude", "Show Claude chat replies"), Prefs.claudeChat) { Prefs.claudeChat = $0 })
         nm.addItem(toggle(L("Не показывать в режиме фокуса", "Silence during Focus"), Prefs.quietInFocus) { Prefs.quietInFocus = $0 })
         nm.addItem(.separator())
         nm.addItem(radio(L("Время на экране", "Time on screen"),

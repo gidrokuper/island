@@ -13,6 +13,8 @@ enum Prefs {
     static var claudeNotices: Bool { get { get("claudeNotices", true) } set { d.set(newValue, forKey: "claudeNotices") } }
     /* беззвучные уведомления (заглушённые чаты и т. п.) показывать в острове */
     static var silentNotices: Bool { get { get("silentNotices", false) } set { d.set(newValue, forKey: "silentNotices") } }
+    /* показывать, когда отвечает обычный чат Claude (через Универсальный доступ) */
+    static var claudeChat: Bool { get { get("claudeChat", true) } set { d.set(newValue, forKey: "claudeChat") } }
     /* в режиме фокуса уведомления не показывать */
     static var quietInFocus: Bool { get { get("quietInFocus", true) } set { d.set(newValue, forKey: "quietInFocus") } }
     /* сколько секунд уведомление на экране */

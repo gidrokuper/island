@@ -13,6 +13,11 @@ enum CLI {
         switch args.first {
         case "hook":
             info = hook()
+        case "axdump":
+            info = ["event": "AXDump"]
+        case "brightness":
+            /* Island brightness up|down — как клавиши яркости */
+            info = ["event": "Bright", "message": args.count > 1 ? args[1] : "up"]
         case "expand":
             /* раскрыть остров на несколько секунд — для проверки и скриншотов */
             info = ["event": "Expand"]

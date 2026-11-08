@@ -91,6 +91,11 @@ final class IslandModel: ObservableObject {
     let sound = SoundSystem()
     private var deviceWork: DispatchWorkItem?
     @Published var volumeHUD = false { didSet { recompute() } }
+    /* плашка громкости показывает яркость экрана */
+    @Published var hudBrightness = false
+    /* раскрыт командой Island expand — не сворачивать, пока курсор не над островом */
+    var pinned = Date.distantPast
+    @Published var brightness: Float = Brightness.get()
     struct FocusEvent: Equatable { var mode: FocusMode; var on: Bool }
     @Published var focusEvent: FocusEvent? { didSet { recompute() } }
     let focus = FocusWatcher()
@@ -143,6 +148,38 @@ final class IslandModel: ObservableObject {
         return .idle
     }
 
+    /* обычный чат Claude: пока в окне есть «Остановить ответ» — показываем его как работу Claude */
+    private let chatQueue = DispatchQueue(label: "island.claude-chat", qos: .utility)
+    private var chatBusy = false
+    static let chatSession = "claude-chat"
+
+    func pollClaudeChat() {
+        guard Prefs.claudeChat, !chatBusy,
+              NSWorkspace.shared.runningApplications.contains(where: { $0.bundleIdentifier == claudeBundle }) else {
+            if activities.contains(where: { $0.session == Self.chatSession }) { activities.removeAll { $0.session == Self.chatSession } }
+            return
+        }
+        chatBusy = true
+        chatQueue.async { [weak self] in
+            let on = ClaudeChat.answering()
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.chatBusy = false
+                /* кнопка «Остановить ответ» есть только у обычного чата: у Claude Code своя, её тут не видно */
+                let has = self.activities.contains { $0.session == Self.chatSession }
+                if on && !has {
+                    var a = Activity(session: Self.chatSession, project: "", started: Date(), bundle: claudeBundle, last: Date())
+                    a.action = L("Отвечает в чате", "Replying in chat")
+                    self.activities.append(a)
+                } else if !on && has {
+                    self.activities.removeAll { $0.session == Self.chatSession }
+                } else if on, let k = self.activities.firstIndex(where: { $0.session == Self.chatSession }) {
+                    self.activities[k].last = Date()
+                }
+            }
+        }
+    }
+
     func refreshClaude() {
         let app = NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == claudeBundle }
         claudeRunning = app || !activities.isEmpty || Self.processRunning("claude")
@@ -189,7 +226,7 @@ final class IslandModel: ObservableObject {
         case .notice: return CGSize(width: max(440, n.width + 240), height: n.height + 70)
         case .expanded:
             let extra: CGFloat = activities.isEmpty ? 0 : 42
-            return CGSize(width: max(560, n.width + 340), height: n.height + 160 + extra)
+            return CGSize(width: max(560, n.width + 340), height: n.height + 160 + extra + (Brightness.available ? 30 : 0))
         }
     }
 
@@ -204,9 +241,10 @@ final class IslandModel: ObservableObject {
     func start() {
         refreshBattery(initial: true)
         refreshClaude()
+        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in self?.pollClaudeChat() }
         refreshMusic()
         sound.onConnect = { [weak self] d in self?.showDevice(d) }
-        sound.onVolumeChange = { [weak self] in self?.showVolume() }
+        sound.onVolumeChange = { [weak self] in self?.hudBrightness = false; self?.showVolume() }
         focus.onChange = { [weak self] new, old in
             if let new { self?.showFocus(FocusEvent(mode: new, on: true)) }
             else if let old { self?.showFocus(FocusEvent(mode: old, on: false)) }
@@ -285,7 +323,15 @@ final class IslandModel: ObservableObject {
                         body: Self.russian(i["message"] ?? ""), bundle: bundle ?? a?.bundle ?? claudeBundle, icon: claudeBundle)) }
         case "SessionEnd":
             activities.removeAll { $0.session == sid }
+        case "AXDump":
+            ClaudeChat.dump()
+        case "Bright":
+            /* для проверки: шагнуть яркость самим и показать плашку */
+            let b = Brightness.get()
+            setBrightness(i["message"] == "down" ? b - 1 / 16 : b + 1 / 16)
+            volumeKey(i["message"] == "down" ? .brightDown : .brightUp, [])
         case "Expand":
+            pinned = Date().addingTimeInterval(6)
             expanded = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in self?.expanded = false }
         case "Like":
@@ -414,13 +460,29 @@ final class IslandModel: ObservableObject {
     }
 
     /* клавиши громкости: шаг 1/16, с ⌥⇧ — мелкий шаг 1/64 */
+    func setBrightness(_ v: Float) {
+        Brightness.set(v)
+        brightness = max(0, min(1, v))
+    }
+
     func volumeKey(_ k: MediaKeys.Key, _ f: NSEvent.ModifierFlags) {
         let step: Float = f.contains(.option) && f.contains(.shift) ? 1 / 64 : 1 / 16
+        if k == .brightUp || k == .brightDown {
+            /* яркость меняет macOS; через мгновение читаем, что получилось, и показываем */
+            hudBrightness = true
+            showVolume()
+            for d in [0.06, 0.2, 0.45] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + d) { [weak self] in self?.brightness = Brightness.get() }
+            }
+            return
+        }
+        hudBrightness = false
         let v = sound.muted ? 0 : sound.volume
         switch k {
         case .up: sound.setVolume(((v / step).rounded() + 1) * step)
         case .down: sound.setVolume(max(0, ((v / step).rounded() - 1) * step))
         case .mute: sound.setMuted(!sound.muted)
+        default: break
         }
         showVolume()
     }

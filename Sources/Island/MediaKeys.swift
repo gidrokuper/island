@@ -2,12 +2,12 @@ import AppKit
 import ApplicationServices
 
 /*
- Клавиши громкости (F10–F12 / тач-бар) перехватываем сами: громкость меняет остров,
+ Клавиши громкости (F10–F12) и яркости (F1–F2) перехватываем сами: их меняет остров,
  а системная плашка macOS не появляется. Нужен «Универсальный доступ» для острова.
  Без него клавиши работают как обычно, и показывается системная плашка.
 */
 final class MediaKeys {
-    enum Key { case up, down, mute }
+    enum Key { case up, down, mute, brightUp, brightDown }
 
     var handler: ((Key, NSEvent.ModifierFlags) -> Void)?
     fileprivate var tap: CFMachPort?
@@ -58,12 +58,16 @@ private func mediaKeyCallback(proxy: CGEventTapProxy, type: CGEventType, event: 
     case 0: key = .up        /* NX_KEYTYPE_SOUND_UP */
     case 1: key = .down      /* NX_KEYTYPE_SOUND_DOWN */
     case 7: key = .mute      /* NX_KEYTYPE_MUTE */
+    case 2: key = .brightUp     /* NX_KEYTYPE_BRIGHTNESS_UP */
+    case 3: key = .brightDown   /* NX_KEYTYPE_BRIGHTNESS_DOWN */
     default: return Unmanaged.passUnretained(event)
     }
     if state == 0xA {
         let flags = ns.modifierFlags
         DispatchQueue.main.async { me.handler?(key, flags) }
     }
-    /* и нажатие, и отпускание глотаем — система плашку не покажет */
+    /* яркость меняет сама macOS (иначе два значения спорят и экран мерцает) — клавишу пропускаем дальше,
+       остров только показывает новую яркость. Громкость глотаем: её меняет остров */
+    if key == .brightUp || key == .brightDown { return Unmanaged.passUnretained(event) }
     return nil
 }
