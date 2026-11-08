@@ -23,7 +23,35 @@ enum Brightness {
         return b
     }
 
+    /*
+     Плавный переход к значению, как у самой macOS: ~0,15 с мелкими шагами вместо одного рывка
+     (рывки на каждое нажатие выглядели как мерцание). Новое нажатие просто меняет цель.
+    */
+    private static var rampTarget: Float = 0
+    private static var rampTimer: Timer?
+
+    static func animate(to v: Float) {
+        rampTarget = max(0, min(1, v))
+        guard rampTimer == nil else { return }
+        let t = Timer(timeInterval: 1.0 / 60, repeats: true) { timer in
+            let cur = get()
+            let diff = rampTarget - cur
+            if abs(diff) < 0.004 {
+                set(rampTarget)
+                timer.invalidate()
+                rampTimer = nil
+                return
+            }
+            /* за кадр проходим треть оставшегося, но не меньше 0,004 — мягко и быстро */
+            let step = diff > 0 ? max(diff / 3, 0.004) : min(diff / 3, -0.004)
+            set(cur + step)
+        }
+        RunLoop.main.add(t, forMode: .common)
+        rampTimer = t
+    }
+
     static func set(_ v: Float) {
-        _ = setFn?(display, max(0, min(1, v)))
+        let x = max(0, min(1, v))
+        _ = setFn?(display, x)
     }
 }
