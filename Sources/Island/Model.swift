@@ -93,8 +93,6 @@ final class IslandModel: ObservableObject {
     @Published var volumeHUD = false { didSet { recompute() } }
     /* плашка громкости показывает яркость экрана */
     @Published var hudBrightness = false
-    private var brightTarget: Float = 0
-    private var brightTargetAt = Date.distantPast
     /* раскрыт командой Island expand — не сворачивать, пока курсор не над островом */
     var pinned = Date.distantPast
     @Published var brightness: Float = Brightness.get()
@@ -329,7 +327,8 @@ final class IslandModel: ObservableObject {
         case "AXDump":
             ClaudeChat.dump()
         case "Bright":
-            /* для проверки: как нажатие клавиши яркости */
+            /* для проверки: шаг яркости из острова и плашка */
+            setBrightness(Brightness.get() + (i["message"] == "down" ? -1 : 1) / 16)
             volumeKey(i["message"] == "down" ? .brightDown : .brightUp, [])
         case "Expand":
             pinned = Date().addingTimeInterval(6)
@@ -469,16 +468,14 @@ final class IslandModel: ObservableObject {
     func volumeKey(_ k: MediaKeys.Key, _ f: NSEvent.ModifierFlags) {
         let step: Float = f.contains(.option) && f.contains(.shift) ? 1 / 64 : 1 / 16
         if k == .brightUp || k == .brightDown {
-            /* шагаем от своей цели, а не от текущей яркости: macOS меняет её плавно, и промежуточное
-               значение при быстрых нажатиях давало скачки туда-обратно (мерцание) */
-            if Date().timeIntervalSince(brightTargetAt) > 1.2 { brightTarget = Brightness.get() }
-            let t = brightTarget
-            brightTarget = k == .brightUp ? min(1, ((t / step).rounded() + 1) * step) : max(0, ((t / step).rounded() - 1) * step)
-            brightTargetAt = Date()
-            Brightness.set(brightTarget)
-            brightness = brightTarget
+            /* Яркость по клавише macOS меняет сама (даже когда событие перехвачено — системная плашка
+               при этом скрыта). Если менять ещё и из острова, два значения спорят и экран мерцает.
+               Поэтому остров только показывает то, что выставила система. */
             hudBrightness = true
             showVolume()
+            for d in [0.05, 0.12, 0.25, 0.45, 0.7] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + d) { [weak self] in self?.brightness = Brightness.get() }
+            }
             return
         }
         hudBrightness = false
