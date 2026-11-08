@@ -218,7 +218,8 @@ final class IslandModel: ObservableObject {
             var cw: CGFloat = 12 + 6 + w(a?.action ?? L("Думаю…", "Thinking…"), .medium) + 6 + 32 + 24
             cw += 12 + 6  /* значок Claude вместо названия проекта */
             if activities.count > 1 { cw += 22 }
-            return CGSize(width: min(max(cw, n.width + 40), n.width + 150), height: n.height + 24)
+            /* не уже, чем в покое: искра слева от выреза не должна заезжать под чёлку */
+            return CGSize(width: min(max(cw, n.width + 2 * 34), n.width + 150), height: n.height + 24)
         case .flash: return CGSize(width: n.width + 2 * 64, height: n.height)
         case .device:
             if connected?.airpods == true { return CGSize(width: max(n.width + 2 * 18, 100), height: n.height + 54) }  /* только наушники под вырезом */
