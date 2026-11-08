@@ -66,8 +66,6 @@ private func mediaKeyCallback(proxy: CGEventTapProxy, type: CGEventType, event: 
         let flags = ns.modifierFlags
         DispatchQueue.main.async { me.handler?(key, flags) }
     }
-    /* яркость меняет сама macOS (иначе два значения спорят и экран мерцает) — клавишу пропускаем дальше,
-       остров только показывает новую яркость. Громкость глотаем: её меняет остров */
-    if key == .brightUp || key == .brightDown { return Unmanaged.passUnretained(event) }
+    /* и нажатие, и отпускание глотаем — системная плашка не появится, яркость и громкость меняет остров */
     return nil
 }
